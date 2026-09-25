@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#26282a">
+<title>RoadWatch</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--asphalt:#26282a;--paper:#f7f5f0;--amber:#f2a93b;--red:#c4432b;--green:#4c7a5e;--ink:#1c1d1e;--soft:#6b6b68;--line:#d8d3c8}
+*{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Inter,sans-serif;background:var(--asphalt);color:var(--ink);overflow:hidden}
+#app{display:flex;flex-direction:column;height:100dvh}
+header{background:var(--asphalt);color:var(--paper);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--amber);z-index:20}
+h1{font-family:Oswald,sans-serif;font-size:19px;margin:0}.tag{font-size:11.5px;color:#b9b6ae}
+.list-toggle{background:#37393c;color:var(--paper);border:1px solid #4a4c4e;border-radius:8px;padding:9px 14px;font-weight:600}
+#count{background:var(--amber);color:var(--ink);border-radius:20px;padding:1px 7px;font-size:11px;margin-left:6px}
+main{flex:1;min-height:0;position:relative;display:flex}
+#map{flex:1;height:100%;background:#1c242c}
+#panel{width:340px;max-width:85vw;background:var(--paper);position:absolute;right:0;top:0;bottom:0;transform:translateX(100%);transition:transform .25s;z-index:50;display:flex;flex-direction:column}
+#panel.open{transform:none}
+.panel-head{padding:16px 18px;border-bottom:1px solid var(--line)}
+.panel-head h2{font-family:Oswald,sans-serif;margin:0 0 4px;font-size:16px}
+.panel-head p{margin:0;font-size:12px;color:var(--soft)}
+#panelList{flex:1;overflow:auto;padding:8px 10px}
+.empty{padding:30px 16px;text-align:center;color:var(--soft);line-height:1.6}
+.item{display:flex;gap:11px;padding:11px 8px;border:0;background:transparent;width:100%;text-align:left;border-bottom:1px solid #eeece5}
+.thumb{width:56px;height:56px;border-radius:8px;object-fit:cover;background:#e9e6df}
+.sev{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;color:#fff}
+.sev-priority{background:var(--red)}.sev-confirmed{background:var(--amber);color:var(--ink)}.sev-reported{background:var(--green)}
+.votes{font-family:Oswald,sans-serif;font-size:20px;font-weight:700}
+.fabs{position:absolute;right:16px;bottom:22px;display:flex;flex-direction:column;gap:10px;align-items:flex-end;z-index:40}
+.fab{width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--line)}
+.fab.active{background:linear-gradient(135deg,var(--green),var(--amber) 55%,var(--red))}
+.report{background:var(--amber);border:0;border-radius:30px;padding:14px 22px;font-family:Oswald,sans-serif}
+.toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:var(--asphalt);color:var(--paper);padding:9px 16px;border-radius:8px;opacity:0;z-index:60}
+.toast.show{opacity:1}
+.legend{position:absolute;left:14px;bottom:46px;background:rgba(38,40,42,.85);color:var(--paper);padding:9px 12px;border-radius:9px;width:130px;z-index:39;font-size:10px}
+.bar{height:7px;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--amber),var(--red))}
+.back{position:fixed;inset:0;background:rgba(20,20,20,.72);display:none;align-items:flex-end;justify-content:center;z-index:80}
+.back.open{display:flex}
+.modal{background:var(--paper);width:100%;max-width:460px;border-radius:18px 18px 0 0;padding:20px;max-height:88vh;overflow:auto}
+.zone{border:2px dashed var(--line);border-radius:12px;padding:26px 16px;text-align:center;background:#e9e6df;margin-bottom:14px}
+input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;font:13.5px Inter}
+.loc{background:#e9e6df;border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--soft);margin-bottom:16px}
+.actions{display:flex;gap:10px}
+.btn{flex:1;border:0;border-radius:10px;padding:13px;font-family:Oswald,sans-serif}
+.cancel{background:#e9e6df}.go{background:var(--amber)}.go:disabled{opacity:.45}
+.preview img{width:100%;max-height:240px;object-fit:cover;border-radius:12px}
+</style></head>
+<body>
+<div id="app">
+<header><div><h1>RoadWatch</h1><div class="tag">Live community map</div></div>
+<button class="list-toggle" id="panelToggle" type="button">Priority list <span id="count">0</span></button></header>
+<main>
+<div id="map"></div>
+<aside id="panel"><div class="panel-head"><h2>Priority list</h2><p>Nearby reports add a confirm instead of a duplicate pin.</p></div><div id="panelList"></div></aside>
+<div class="fabs">
+<button class="fab active" id="heatBtn" type="button" title="Hotspots"></button>
+<button class="fab" id="locateBtn" type="button" title="My location">+</button>
+<button class="report" id="reportBtn" type="button">Report pothole</button>
+</div>
+<div class="legend" id="legend"><div>Hotspot density</div><div class="bar"></div></div>
+<div class="toast" id="toast"></div>
+</main></div>
+<div class="back" id="back">
+<div class="modal">
+<h2 style="font-family:Oswald,sans-serif;margin:0 0 6px">Report a pothole</h2>
+<p style="color:#6b6b68;font-size:12.5px">Photo + GPS. Same spot nearby adds a confirm.</p>
+<label class="zone" id="zone">Tap to take or choose a photo<input id="file" type="file" accept="image/*" capture="environment" hidden></label>
+<div class="preview" id="preview" hidden><img id="previewImg" alt=""><button type="button" id="retake">Retake</button></div>
+<div class="loc" id="loc">Finding your location…</div>
+<input id="phone" type="tel" placeholder="Your phone number">
+<input id="note" type="text" placeholder="Short note (optional)">
+<div class="actions"><button class="btn cancel" id="cancel" type="button">Cancel</button><button class="btn go" id="submit" type="button" disabled>Submit report</button></div>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<script>
+const KEY='roadwatch-live-v1';
+let map,markers,heat,pins=[],me,myPos,photo,reportPos;
+const $=id=>document.getElementById(id);
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
+function sev(v){if(v>=5)return{l:'Priority',c:'#c4432b',k:'sev-priority'};if(v>=2)return{l:'Confirmed',c:'#f2a93b',k:'sev-confirmed'};return{l:'Reported',c:'#4c7a5e',k:'sev-reported'}}
+function ago(iso){const s=Math.floor((Date.now()-new Date(iso))/1000);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+function hav(a,b,c,d){const R=6371000,r=x=>x*Math.PI/180,x=r(c-a),y=r(d-b),k=Math.sin(x/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(y/2)**2;return R*2*Math.atan2(Math.sqrt(k),Math.sqrt(1-k))}
+function load(){try{pins=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){pins=[]}draw()}
+function save(){localStorage.setItem(KEY,JSON.stringify(pins))}
+function draw(){
+$('count').textContent=pins.length;
+if(markers)markers.clearLayers();
+pins.forEach(p=>{const s=sev(p.votes);L.circleMarker([p.lat,p.lng],{radius:9+Math.min(p.votes,8),color:'#fff',weight:2,fillColor:s.c,fillOpacity:.95}).addTo(markers).bindPopup('<img src="'+p.photo+'" style="width:100%;height:110px;object-fit:cover;border-radius:6px"><div><b>'+p.votes+' confirms</b> · '+s.l+'</div><div style="color:#6b6b68">'+ago(p.firstReported)+'</div>');});
+if(heat){map.removeLayer(heat);heat=null}
+if(pins.length&&$('legend').style.display!=='none'){heat=L.heatLayer(pins.map(p=>[p.lat,p.lng,Math.min(p.votes,8)]),{radius:48,blur:38,max:6,minOpacity:.35,gradient:{0:'#4c7a5e',.6:'#f2a93b',1:'#c4432b'}}).addTo(map)}
+const list=$('panelList');
+if(!pins.length){list.innerHTML='<div class="empty">No reports yet. Tap Report pothole.</div>';return}
+const sorted=pins.slice().sort((a,b)=>b.votes-a.votes);
+list.innerHTML=sorted.map(p=>{const s=sev(p.votes);return '<button class="item" type="button"><img class="thumb" src="'+p.photo+'" alt=""><div style="flex:1"><span class="sev '+s.k+'">'+s.l+'</span><div style="font-size:11.5px;color:#6b6b68">'+ago(p.firstReported)+'</div></div><div class="votes">'+p.votes+'</div></button>'}).join('');
+list.querySelectorAll('.item').forEach((el,i)=>{el.onclick=()=>{$('panel').classList.remove('open');map.setView([sorted[i].lat,sorted[i].lng],18)}});
+}
+function locate(recenter){
+if(!navigator.geolocation){toast('Location unavailable');return}
+navigator.geolocation.getCurrentPosition(pos=>{myPos={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy};
+if(!me)me=L.circleMarker([myPos.lat,myPos.lng],{radius:8,color:'#fff',weight:3,fillColor:'#3b82f6',fillOpacity:1}).addTo(map);
+else me.setLatLng([myPos.lat,myPos.lng]);
+if(recenter)map.setView([myPos.lat,myPos.lng],17);
+},()=>toast('Allow location access'),{enableHighAccuracy:true,timeout:8000});
+}
+function compress(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const s=Math.min(1,640/img.width);const c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.6))};img.onerror=rej;img.src=r.result};r.onerror=rej;r.readAsDataURL(file)})}
+function ready(){$('submit').disabled=!(photo&&reportPos&&$('phone').value.replace(/\D/g,'').length>=7)}
+map=L.map('map',{zoomControl:false,zoomAnimation:false}).setView([20.5937,78.9629],5);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OSM'}).addTo(map);
+L.control.zoom({position:'bottomleft'}).addTo(map);
+markers=L.layerGroup().addTo(map);
+setTimeout(()=>map.invalidateSize(),250);
+$('panelToggle').onclick=()=>$('panel').classList.toggle('open');
+$('locateBtn').onclick=()=>locate(true);
+$('heatBtn').onclick=()=>{const on=$('heatBtn').classList.toggle('active');$('legend').style.display=on?'block':'none';draw()};
+$('reportBtn').onclick=()=>{$('back').classList.add('open');photo=null;reportPos=null;$('preview').hidden=true;$('zone').style.display='block';$('loc').textContent='Finding your location…';$('note').value='';ready();
+navigator.geolocation.getCurrentPosition(pos=>{reportPos={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy};$('loc').textContent='Location locked in.';ready()},()=>{$('loc').textContent='Allow location and try again'},{enableHighAccuracy:true,timeout:10000})};
+$('cancel').onclick=()=>$('back').classList.remove('open');
+$('back').onclick=e=>{if(e.target===$('back'))$('back').classList.remove('open')};
+$('zone').onclick=()=>$('file').click();
+$('retake').onclick=()=>{photo=null;$('preview').hidden=true;$('zone').style.display='block';ready()};
+$('file').onchange=async()=>{const f=$('file').files[0];if(!f)return;photo=await compress(f);$('previewImg').src=photo;$('preview').hidden=false;$('zone').style.display='none';ready()};
+$('phone').oninput=ready;
+$('phone').value=localStorage.getItem('roadwatch-phone')||'';
+$('submit').onclick=()=>{
+const phone=$('phone').value.replace(/\D/g,'');
+let match=null,best=1e9;
+pins.forEach(p=>{const d=hav(reportPos.lat,reportPos.lng,p.lat,p.lng);const rad=Math.max(12,Math.min(45,Math.sqrt((reportPos.acc||15)**2+(p.accuracy||15)**2)+4));if(d<=rad&&d<best){best=d;match=p}});
+if(match){if((match.voters||[]).includes(phone)){toast('This number already confirmed that pothole');return}match.votes+=1;match.voters=match.voters||[];match.voters.push(phone)}
+else pins.push({id:'p_'+Date.now(),lat:reportPos.lat,lng:reportPos.lng,accuracy:reportPos.acc||15,votes:1,photo,note:$('note').value,firstReported:new Date().toISOString(),voters:[phone]});
+localStorage.setItem('roadwatch-phone',phone);save();draw();$('back').classList.remove('open');map.setView([reportPos.lat,reportPos.lng],17);toast(match?'Confirm added':'Pothole reported');
+};
+load();locate(true);
+</script></body></html>
