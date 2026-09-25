@@ -17,6 +17,7 @@ WORKDIR /app
 
 COPY --from=builder /app/target/release/roadwatch-server ./roadwatch-server
 COPY --from=builder /app/migrations ./migrations
+COPY public ./public
 
 EXPOSE 3000
 CMD ["./roadwatch-server"]
