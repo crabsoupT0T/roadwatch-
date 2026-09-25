@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>RoadWatch</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171b22;
+      --panel-2: #1e242e;
+      --line: #2a3140;
+      --text: #eef2f7;
+      --muted: #9aa6b8;
+      --amber: #f5a524;
+      --orange: #ef7a2a;
+      --red: #e24b4b;
+      --green: #3dba7a;
+      --blue: #4c8dff;
+      --shadow: 0 18px 50px rgba(0,0,0,.45);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; }
+    #app { height: 100%; display: flex; flex-direction: column; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; background: #12151b; border-bottom: 1px solid var(--line); z-index: 20;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .logo {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--amber), var(--orange));
+      display: grid; place-items: center; font-weight: 800; color: #1a1206;
+    }
+    .brand h1 { font-size: 16px; margin: 0; letter-spacing: .02em; }
+    .brand p { margin: 0; font-size: 11px; color: var(--muted); }
+    .status {
+      font-size: 11px; padding: 5px 9px; border-radius: 999px;
+      border: 1px solid var(--line); color: var(--muted);
+    }
+    .status.live { color: #b7f0cf; border-color: #2e6a4a; background: #143024; }
+    .status.demo { color: #f3d7a0; border-color: #6a4e1d; background: #2a1f0c; }
+    #map { flex: 1; min-height: 280px; }
+    .legend {
+      position: absolute; left: 12px; bottom: 96px; z-index: 500;
+      background: rgba(23,27,34,.92); backdrop-filter: blur(8px);
+      border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+      font-size: 12px; color: var(--muted);
+    }
+    .legend b { color: var(--text); }
+    .swatch { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .dock {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 600;
+      padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(transparent, rgba(15,17,21,.85) 28%, #0f1115);
+    }
+    .fab {
+      width: 100%; border: 0; border-radius: 14px; padding: 14px 16px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      background: linear-gradient(135deg, var(--amber), var(--orange));
+      color: #1a1206;
+    }
+    .sheet {
+      display: none; position: fixed; inset: 0; z-index: 800;
+      background: rgba(0,0,0,.55);
+    }
+    .sheet.open { display: block; }
+    .sheet-card {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      max-height: 92vh; overflow: auto;
+      background: var(--panel); border-top-left-radius: 20px; border-top-right-radius: 20px;
+      padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+      box-shadow: var(--shadow);
+    }
+    .sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .sheet-head h2 { margin: 0; font-size: 18px; }
+    .x {
+      background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+      width: 34px; height: 34px; border-radius: 10px; cursor: pointer;
+    }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
+    input, textarea {
+      width: 100%; background: #10141b; color: var(--text);
+      border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; font: inherit;
+    }
+    textarea { min-height: 74px; resize: vertical; }
+    .hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    .photo {
+      margin-top: 8px; border: 1px dashed var(--line); border-radius: 14px;
+      min-height: 120px; display: grid; place-items: center; overflow: hidden; background: #10141b;
+    }
+    .photo img { width: 100%; max-height: 220px; object-fit: cover; display: block; }
+    .ghost {
+      background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+      border-radius: 12px; padding: 11px; cursor: pointer; font-weight: 600;
+    }
+    .msg { margin-top: 10px; font-size: 13px; min-height: 18px; }
+    .msg.ok { color: var(--green); }
+    .msg.err { color: #ff8b8b; }
+    .pin-card img { width: 100%; height: 140px; object-fit: cover; border-radius: 12px; background: #000; }
+    .badge {
+      display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 8px;
+      border-radius: 999px; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .badge.reported { background: #3a2e12; color: #f5d48a; }
+    .badge.confirmed { background: #3a2414; color: #ffb27a; }
+    .badge.priority { background: #3a1414; color: #ff9a9a; }
+    .votes { font-size: 22px; font-weight: 800; }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--text); }
+    .leaflet-popup-content { margin: 12px; min-width: 180px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="brand">
+        <div class="logo">RW</div>
+        <div>
+          <h1>RoadWatch</h1>
+          <p>Report a pothole. Confirm one nearby.</p>
+        </div>
+      </div>
+      <div id="apiStatus" class="status demo">demo</div>
+    </header>
+    <div id="map"></div>
+    <div class="legend">
+      <div><span class="swatch" style="background:#f5a524"></span><b>Reported</b> · 1 vote</div>
+      <div><span class="swatch" style="background:#ef7a2a"></span><b>Confirmed</b> · 2–4</div>
+      <div><span class="swatch" style="background:#e24b4b"></span><b>Priority</b> · 5+</div>
+    </div>
+    <div class="dock">
+      <button class="fab" id="openReport">Report pothole</button>
+    </div>
+  </div>
+
+  <div class="sheet" id="reportSheet">
+    <div class="sheet-card">
+      <div class="sheet-head">
+        <h2>New report</h2>
+        <button class="x" id="closeReport">×</button>
+      </div>
+      <div class="row">
+        <div>
+          <label>Latitude</label>
+          <input id="lat" type="number" step="any" />
+        </div>
+        <div>
+          <label>Longitude</label>
+          <input id="lng" type="number" step="any" />
+        </div>
+      </div>
+      <button class="ghost" id="useGps" style="margin-top:8px">Use my location</button>
+      <label>Photo</label>
+      <input id="photoFile" type="file" accept="image/*" capture="environment" />
+      <div class="photo" id="photoBox"><span class="hint">A photo is required</span></div>
+      <label>Note</label>
+      <textarea id="note" placeholder="What's wrong with this stretch?"></textarea>
+      <label>Phone number</label>
+      <input id="phone" inputmode="tel" placeholder="9876543210" />
+      <div class="hint">Used only to stop double-votes. Hashed on the server, never shown on the map.</div>
+      <button class="fab" id="submitReport" style="margin-top:16px">Submit report</button>
+      <div class="msg" id="reportMsg"></div>
+    </div>
+  </div>
+
+  <div class="sheet" id="detailSheet">
+    <div class="sheet-card pin-card">
+      <div class="sheet-head">
+        <h2>Pothole</h2>
+        <button class="x" id="closeDetail">×</button>
+      </div>
+      <div id="detailBody"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const API_BASE = (localStorage.getItem("RW_API") || "").replace(/\/$/, "");
+    const MATCH_M = 10;
+    const DEMO = [
+      { id: "demo-1", lat: 12.9716, lng: 77.5946, photo: "", note: "Deep hole near the bus stop", votes: 1, severity: "reported", firstReported: new Date(Date.now()-86400000*2).toISOString() },
+      { id: "demo-2", lat: 12.9731, lng: 77.5962, photo: "", note: "Broken edge on the turn", votes: 3, severity: "confirmed", firstReported: new Date(Date.now()-86400000*5).toISOString() },
+      { id: "demo-3", lat: 12.9698, lng: 77.5920, photo: "", note: "Cluster of holes after last rain", votes: 7, severity: "priority", firstReported: new Date(Date.now()-86400000*9).toISOString() }
+    ];
+
+    const statusEl = document.getElementById("apiStatus");
+    const map = L.map("map", { zoomControl: true }).setView([12.9716, 77.5946], 15);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+
+    const layer = L.layerGroup().addTo(map);
+    let potholes = [];
+    let photoData = "";
+    let live = false;
+
+    function colorFor(sev) {
+      if (sev === "priority") return "#e24b4b";
+      if (sev === "confirmed") return "#ef7a2a";
+      return "#f5a524";
+    }
+    function pinIcon(sev, votes) {
+      const c = colorFor(sev);
+      return L.divIcon({
+        className: "",
+        html: `<div style="background:${c};color:#1a1206;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;font:700 11px/1 system-ui;border:2px solid #fff;box-shadow:0 6px 12px rgba(0,0,0,.35)"><span style="transform:rotate(45deg)">${votes}</span></div>`,
+        iconSize: [28, 28],
+        iconAnchor: [6, 28]
+      });
+    }
+    function renderPins() {
+      layer.clearLayers();
+      potholes.forEach((p) => {
+        const m = L.marker([p.lat, p.lng], { icon: pinIcon(p.severity, p.votes) }).addTo(layer);
+        m.on("click", () => openDetail(p));
+      });
+    }
+    function openSheet(id) { document.getElementById(id).classList.add("open"); }
+    function closeSheet(id) { document.getElementById(id).classList.remove("open"); }
+
+    function openDetail(p) {
+      const body = document.getElementById("detailBody");
+      const when = p.firstReported ? new Date(p.firstReported).toLocaleString() : "—";
+      body.innerHTML = `
+        ${p.photo ? `<img src="${p.photo}" alt="pothole photo" />` : `<div class="photo"><span class="hint">No photo stored</span></div>`}
+        <p style="margin:12px 0 6px"><span class="badge ${p.severity}">${p.severity}</span></p>
+        <div class="votes">${p.votes} vote${p.votes === 1 ? "" : "s"}</div>
+        <p>${p.note || "No note"}</p>
+        <p class="hint">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)} · first reported ${when}</p>
+        <p class="hint">Reports within ${MATCH_M}m add a vote instead of a new pin.</p>
+      `;
+      openSheet("detailSheet");
+    }
+
+    async function loadPotholes() {
+      if (!API_BASE) {
+        potholes = DEMO;
+        live = false;
+        statusEl.textContent = "demo · set RW_API";
+        statusEl.className = "status demo";
+        renderPins();
+        return;
+      }
+      try {
+        const res = await fetch(API_BASE + "/api/potholes");
+        if (!res.ok) throw new Error("bad status");
+        potholes = await res.json();
+        live = true;
+        statusEl.textContent = "API · live";
+        statusEl.className = "status live";
+        if (potholes.length && potholes[0].lat) map.setView([potholes[0].lat, potholes[0].lng], 15);
+        renderPins();
+      } catch (e) {
+        potholes = DEMO;
+        live = false;
+        statusEl.textContent = "demo · API offline";
+        statusEl.className = "status demo";
+        renderPins();
+      }
+    }
+
+    document.getElementById("openReport").onclick = () => {
+      document.getElementById("reportMsg").textContent = "";
+      openSheet("reportSheet");
+    };
+    document.getElementById("closeReport").onclick = () => closeSheet("reportSheet");
+    document.getElementById("closeDetail").onclick = () => closeSheet("detailSheet");
+
+    document.getElementById("useGps").onclick = () => {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition((pos) => {
+        document.getElementById("lat").value = pos.coords.latitude.toFixed(6);
+        document.getElementById("lng").value = pos.coords.longitude.toFixed(6);
+        map.setView([pos.coords.latitude, pos.coords.longitude], 17);
+      });
+    };
+
+    document.getElementById("photoFile").onchange = (ev) => {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        photoData = reader.result;
+        document.getElementById("photoBox").innerHTML = `<img src="${photoData}" alt="preview" />`;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    document.getElementById("submitReport").onclick = async () => {
+      const msg = document.getElementById("reportMsg");
+      const lat = parseFloat(document.getElementById("lat").value);
+      const lng = parseFloat(document.getElementById("lng").value);
+      const note = document.getElementById("note").value;
+      const phone = document.getElementById("phone").value;
+      msg.className = "msg";
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        msg.textContent = "Set a location first.";
+        msg.classList.add("err");
+        return;
+      }
+      if (!photoData) {
+        msg.textContent = "A photo is required.";
+        msg.classList.add("err");
+        return;
+      }
+      if ((phone.match(/\d/g) || []).length < 7) {
+        msg.textContent = "Enter a valid phone number.";
+        msg.classList.add("err");
+        return;
+      }
+
+      const payload = { lat, lng, photo: photoData, note, phone };
+
+      if (!API_BASE || !live) {
+        potholes.unshift({
+          id: "local-" + Date.now(),
+          lat, lng, photo: photoData, note, votes: 1,
+          severity: "reported", firstReported: new Date().toISOString()
+        });
+        renderPins();
+        map.setView([lat, lng], 17);
+        msg.textContent = "Saved locally (server not connected). Point API_BASE / localStorage RW_API at your Rust server to persist.";
+        msg.classList.add("ok");
+        return;
+      }
+
+      try {
+        const res = await fetch(API_BASE + "/api/report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 409) {
+          msg.textContent = data.error || "This phone number has already confirmed this pothole.";
+          msg.classList.add("err");
+          return;
+        }
+        if (!res.ok) {
+          msg.textContent = data.error || "Could not submit.";
+          msg.classList.add("err");
+          return;
+        }
+        msg.textContent = data.status === "created"
+          ? "New pothole started."
+          : "Matched an existing pothole within 10m — vote added.";
+        msg.classList.add("ok");
+        await loadPotholes();
+      } catch (e) {
+        msg.textContent = "Network error.";
+        msg.classList.add("err");
+      }
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        document.getElementById("lat").value = pos.coords.latitude.toFixed(6);
+        document.getElementById("lng").value = pos.coords.longitude.toFixed(6);
+        map.setView([pos.coords.latitude, pos.coords.longitude], 16);
+      });
+    }
+    loadPotholes();
+  </script>
+</body>
+</html>
