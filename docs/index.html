@@ -31,7 +31,7 @@ main{flex:1;min-height:0;position:relative}
 .thumb{width:56px;height:56px;border-radius:8px;object-fit:cover;background:#e9e6df}
 .sev{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;color:#fff}
 .sev-priority{background:var(--red)}.sev-confirmed{background:var(--amber);color:var(--ink)}.sev-reported{background:var(--green)}
-.votes{font-family:Oswald,sans-serif;font-size:20px;font-weight:700}
+.votes{font-family:Oswald,sans-serif;font-size:20px;font-weight:700}.item{cursor:pointer}.sev-word,.note-word{cursor:pointer}.note-word{font-size:13px;margin-top:3px;font-weight:600}
 .ui{position:fixed;z-index:1100;pointer-events:none}
 .fabs{right:14px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;align-items:flex-end}
 .zoombar{left:14px;top:78px;display:flex;flex-direction:column}
@@ -138,16 +138,52 @@ function draw(){
   });
   syncHeat();
   const list=$('panelList');
+  list.replaceChildren();
   if(!pins.length){list.innerHTML='<div class="empty">No reports on this phone yet. Tap Report damage.</div>';return}
   const sorted=pins.slice().sort((a,b)=>(b.votes||1)-(a.votes||1));
-  list.innerHTML=sorted.map((p,i)=>{const s=sev(p.votes||1);const thumb=p.photo?'<img class="thumb" src="'+p.photo+'" alt="">':'<div class="thumb"></div>';const note=p.note?'<div style="font-size:12.5px;margin-top:3px">'+String(p.note).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>':'';return '<button class="item" type="button"><div class="rank">'+(i+1)+'</div>'+thumb+'<div style="flex:1"><span class="sev '+s.k+'">'+s.l+'</span><div style="font-size:11.5px;color:#6b6b68">'+ago(p.firstReported)+'</div>'+note+'</div><div class="votes">'+(p.votes||1)+'</div></button>'}).join('');
-  list.querySelectorAll('.item').forEach((el,i)=>{el.onclick=()=>{
-    $('panel').classList.remove('open');
-    const p=sorted[i];
-    map.setView([p.lat,p.lng],17);
-    if(p._m)p._m.openPopup();
-  }});
+  sorted.forEach((p,i)=>{
+    const s=sev(p.votes||1);
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='item';
+    const rank=document.createElement('div');
+    rank.className='rank';
+    rank.textContent=String(i+1);
+    const thumb=document.createElement(p.photo?'img':'div');
+    thumb.className='thumb';
+    if(p.photo)thumb.src=p.photo;
+    const body=document.createElement('div');
+    body.style.flex='1';
+    const word=document.createElement('span');
+    word.className='sev '+s.k+' sev-word';
+    word.textContent=s.l;
+    const when=document.createElement('div');
+    when.style.cssText='font-size:11.5px;color:#6b6b68';
+    when.textContent=ago(p.firstReported);
+    body.append(word,when);
+    if(p.note){
+      const note=document.createElement('div');
+      note.className='note-word';
+      note.textContent=p.note;
+      body.append(note);
+    }
+    const votes=document.createElement('div');
+    votes.className='votes';
+    votes.textContent=String(p.votes||1);
+    btn.append(rank,thumb,body,votes);
+    btn.onclick=()=>goToReport(p);
+    list.append(btn);
+  });
 }
+}
+function goToReport(p){
+  $('panel').classList.remove('open');
+  setTimeout(()=>{
+    map.invalidateSize();
+    map.flyTo([p.lat,p.lng],18,{duration:.6});
+    if(p._m)p._m.openPopup();
+  },260);
+
 function showMe(lat,lng,acc){
   myPos={lat,lng,acc:acc||20};
   if(!me){
