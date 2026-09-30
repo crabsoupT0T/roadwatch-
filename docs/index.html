@@ -118,7 +118,7 @@ function save(){
 }
 function popupHtml(p,s){
   const img=p.photo?'<img src="'+p.photo+'" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:6px">':'';
-  const note=p.note?'<div>'+String(p.note).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>';
+  const note=p.note?'<div>'+String(p.note).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>':'';
   return img+'<div><b>'+p.votes+' '+(p.votes===1?'report':'reports')+'</b> · '+s.l+'</div>'+note+'<div style="color:#6b6b68">'+ago(p.firstReported)+'</div>';
 }
 function syncHeat(){
