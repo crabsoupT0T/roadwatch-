@@ -95,7 +95,7 @@ input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
 <script>
 const KEY='roadwatch-live-v2';
-let map,markers,heat,pins=[],me,accCircle,myPos,photo,reportPos,heatOn=true,zooming=false;
+let map,markers,heat,pins=[],me,accCircle,myPos,photo,reportPos,heatOn=true,zooming=false,reportWatch=null;
 const $=id=>document.getElementById(id);
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2600)}
 function sev(v){if(v>=5)return{l:'Priority',c:'#c4432b',k:'sev-priority'};if(v>=2)return{l:'Confirmed',c:'#f2a93b',k:'sev-confirmed'};return{l:'Reported',c:'#4c7a5e',k:'sev-reported'}}
@@ -158,12 +158,28 @@ function showMe(lat,lng,acc){
     accCircle.setRadius(Math.min(acc||20,80));
   }
 }
+function applyFix(pos){
+  reportPos={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy||20,at:Date.now()};
+  showMe(reportPos.lat,reportPos.lng,reportPos.acc);
+  const acc=Math.round(reportPos.acc);
+  $('loc').textContent='Location updated to this photo spot, about '+acc+' m accuracy.';
+  ready();
+}
+function stopWatch(){
+  if(reportWatch!=null && navigator.geolocation){navigator.geolocation.clearWatch(reportWatch);reportWatch=null}
+}
+function freshFix(){
+  return new Promise((res,rej)=>{
+    if(!navigator.geolocation){rej(new Error('no gps'));return}
+    navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+  });
+}
 function locate(recenter){
   if(!navigator.geolocation){toast('Location unavailable');return}
   navigator.geolocation.getCurrentPosition(pos=>{
     showMe(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy);
     if(recenter)map.setView([pos.coords.latitude,pos.coords.longitude],16);
-  },()=>toast('Allow location access'),{enableHighAccuracy:true,timeout:10000,maximumAge:5000});
+  },()=>toast('Allow location access'),{enableHighAccuracy:true,timeout:10000,maximumAge:0});
 }
 function compress(file){
   return new Promise((res,rej)=>{
@@ -210,27 +226,33 @@ $('reportBtn').onclick=()=>{
   photo=null;reportPos=null;
   $('preview').hidden=true;$('zone').style.display='block';$('file').value='';
   $('loc').textContent='Finding your location…';$('note').value='';ready();
-  navigator.geolocation.getCurrentPosition(pos=>{
-    reportPos={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy};
-    showMe(reportPos.lat,reportPos.lng,reportPos.acc);
-    $('loc').textContent='Location locked. The pin will drop on this spot.';
-    ready();
-  },()=>{$('loc').textContent='Allow location and try again'},{enableHighAccuracy:true,timeout:12000});
+  stopWatch();
+  if(!navigator.geolocation){$('loc').textContent='This phone has no location.';return}
+  reportWatch=navigator.geolocation.watchPosition(pos=>{
+    if(!photo)applyFix(pos);
+  },()=>{$('loc').textContent='Allow location and try again.'},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 };
-$('cancel').onclick=()=>$('back').classList.remove('open');
+$('cancel').onclick=()=>{stopWatch();$('back').classList.remove('open')};
 $('back').onclick=e=>{if(e.target===$('back'))$('back').classList.remove('open')};
 $('zone').onclick=()=>$('file').click();
-$('retake').onclick=()=>{photo=null;$('preview').hidden=true;$('zone').style.display='block';$('file').value='';ready()};
+$('retake').onclick=()=>{photo=null;reportPos=null;$('preview').hidden=true;$('zone').style.display='block';$('file').value='';$('loc').textContent='Retake the photo so location can update.';ready()};
 $('file').onchange=async()=>{
   const f=$('file').files[0];
   if(!f)return;
   try{photo=await compress(f)}catch(e){toast('Could not read that photo');return}
-  $('previewImg').src=photo;$('preview').hidden=false;$('zone').style.display='none';ready();
+  $('previewImg').src=photo;$('preview').hidden=false;$('zone').style.display='none';
+  reportPos=null;ready();
+  $('loc').textContent='Photo taken. Updating location…';
+  try{applyFix(await freshFix())}
+  catch(e){$('loc').textContent='Could not update location. Stand outside and retake the photo.';toast('Location did not update')}
 };
 $('phone').oninput=ready;
 $('phone').value=localStorage.getItem('roadwatch-phone')||'';
-$('submit').onclick=()=>{
-  if(!reportPos||!photo){toast('Need a photo and your location');return}
+$('submit').onclick=async()=>{
+  if(!photo){toast('Take a photo first');return}
+  $('loc').textContent='Checking location one more time…';
+  try{applyFix(await freshFix())}catch(e){}
+  if(!reportPos || Date.now()-(reportPos.at||0)>30000){toast('Location is not current. Retake the photo outside.');return}
   const phone=$('phone').value.replace(/\D/g,'');
   let match=null,best=1e9;
   pins.forEach(p=>{
@@ -247,6 +269,7 @@ $('submit').onclick=()=>{
   }else{
     pins.push({id:'p_'+Date.now(),lat:reportPos.lat,lng:reportPos.lng,accuracy:reportPos.acc||15,votes:1,photo,note:$('note').value.trim(),firstReported:new Date().toISOString(),voters:[phone]});
   }
+  stopWatch();
   localStorage.setItem('roadwatch-phone',phone);
   save();
   draw();
