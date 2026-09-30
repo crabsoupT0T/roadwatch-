@@ -210,7 +210,7 @@ map.createPane('me');
 map.getPane('me').style.zIndex=420;
 map.createPane('pins');
 map.getPane('pins').style.zIndex=650;
-L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',{maxZoom:19,maxNativeZoom:19,subdomains:'abc',attribution:'© OpenStreetMap, HOT'}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',{maxZoom:19,maxNativeZoom:17,subdomains:'abc',attribution:'© OpenStreetMap, HOT'}).addTo(map);
 markers=L.layerGroup().addTo(map);
 map.on('zoomstart',()=>{zooming=true;if(heat){map.removeLayer(heat);heat=null}});
 map.on('zoomend',()=>{zooming=false;syncHeat()});
