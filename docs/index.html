@@ -175,7 +175,6 @@ function draw(){
     list.append(btn);
   });
 }
-}
 function goToReport(p){
   $('panel').classList.remove('open');
   setTimeout(()=>{
@@ -183,7 +182,7 @@ function goToReport(p){
     map.flyTo([p.lat,p.lng],18,{duration:.6});
     if(p._m)p._m.openPopup();
   },260);
-
+}
 function showMe(lat,lng,acc){
   myPos={lat,lng,acc:acc||20};
   if(!me){
