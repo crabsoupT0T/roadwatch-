@@ -20,9 +20,9 @@ h1{font-family:Oswald,sans-serif;font-size:19px;margin:0}
 main{flex:1;min-height:0;position:relative}
 #map{position:absolute;inset:0;background:#1c242c}
 .leaflet-container{background:#1c242c;font-family:Inter,sans-serif}
-#panel{width:340px;max-width:85vw;background:var(--paper);position:fixed;right:0;top:64px;bottom:0;transform:translateX(100%);transition:transform .25s;z-index:1200;display:flex;flex-direction:column}
+#panel{width:min(460px,100%);background:var(--paper);position:fixed;right:0;top:0;bottom:0;transform:translateX(100%);transition:transform .25s;z-index:1600;display:flex;flex-direction:column;box-shadow:-8px 0 24px rgba(0,0,0,.25)}
 #panel.open{transform:none}
-.panel-head{padding:16px 18px;border-bottom:1px solid var(--line)}
+.panel-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center}#panelClose{border:0;background:#e9e6df;border-radius:10px;padding:10px 12px;font-family:Oswald,sans-serif}.rank{width:32px;font-family:Oswald,sans-serif;font-size:22px;text-align:center}
 .panel-head h2{font-family:Oswald,sans-serif;margin:0 0 4px;font-size:16px}
 .panel-head p{margin:0;font-size:12px;color:var(--soft)}
 #panelList{flex:1;overflow:auto;padding:8px 10px}
@@ -68,7 +68,7 @@ input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12
 </header>
 <main><div id="map"></div></main>
 </div>
-<aside id="panel"><div class="panel-head"><h2>Priority list</h2><p>Tap a report to jump to its pin.</p></div><div id="panelList"></div></aside>
+<aside id="panel"><div class="panel-head"><button id="panelClose" type="button">Map</button><div><h2>Rankings</h2><p>Sorted by confirms. Tap a rank to open it on the map.</p></div></div><div id="panelList"></div></aside>
 <div class="ui zoombar">
   <button class="zbtn" id="zoomIn" type="button" aria-label="Zoom in">+</button>
   <button class="zbtn" id="zoomOut" type="button" aria-label="Zoom out">−</button>
@@ -140,7 +140,7 @@ function draw(){
   const list=$('panelList');
   if(!pins.length){list.innerHTML='<div class="empty">No reports on this phone yet. Tap Report damage.</div>';return}
   const sorted=pins.slice().sort((a,b)=>(b.votes||1)-(a.votes||1));
-  list.innerHTML=sorted.map(p=>{const s=sev(p.votes||1);const thumb=p.photo?'<img class="thumb" src="'+p.photo+'" alt="">':'<div class="thumb"></div>';return '<button class="item" type="button">'+thumb+'<div style="flex:1"><span class="sev '+s.k+'">'+s.l+'</span><div style="font-size:11.5px;color:#6b6b68">'+ago(p.firstReported)+'</div></div><div class="votes">'+(p.votes||1)+'</div></button>'}).join('');
+  list.innerHTML=sorted.map((p,i)=>{const s=sev(p.votes||1);const thumb=p.photo?'<img class="thumb" src="'+p.photo+'" alt="">':'<div class="thumb"></div>';const note=p.note?'<div style="font-size:12.5px;margin-top:3px">'+String(p.note).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>':'';return '<button class="item" type="button"><div class="rank">'+(i+1)+'</div>'+thumb+'<div style="flex:1"><span class="sev '+s.k+'">'+s.l+'</span><div style="font-size:11.5px;color:#6b6b68">'+ago(p.firstReported)+'</div>'+note+'</div><div class="votes">'+(p.votes||1)+'</div></button>'}).join('');
   list.querySelectorAll('.item').forEach((el,i)=>{el.onclick=()=>{
     $('panel').classList.remove('open');
     const p=sorted[i];
@@ -218,7 +218,7 @@ window.addEventListener('resize',()=>map.invalidateSize());
 setTimeout(()=>map.invalidateSize(),200);
 $('zoomIn').onclick=()=>map.zoomIn();
 $('zoomOut').onclick=()=>map.zoomOut();
-$('panelToggle').onclick=()=>$('panel').classList.toggle('open');
+$('panelToggle').onclick=()=>$('panel').classList.add('open');$('panelClose').onclick=()=>$('panel').classList.remove('open');
 $('locateBtn').onclick=()=>locate(true);
 $('heatBtn').onclick=()=>{heatOn=$('heatBtn').classList.toggle('active');$('legend').style.display=heatOn?'block':'none';syncHeat()};
 $('reportBtn').onclick=()=>{
