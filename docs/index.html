@@ -131,6 +131,7 @@ function draw(){
   markers.clearLayers();
   pins.forEach(p=>{
     const s=sev(p.votes||1);
+    L.circle([p.lat,p.lng],{radius:20,color:s.c,weight:2,fillColor:s.c,fillOpacity:.18,pane:'pins'}).addTo(markers);
     const m=L.marker([p.lat,p.lng],{icon:pinIcon(s.c),pane:'pins',zIndexOffset:500+ (p.votes||1)}).addTo(markers);
     m.bindPopup(popupHtml(p,s));
     p._m=m;
@@ -150,19 +151,18 @@ function draw(){
 function showMe(lat,lng,acc){
   myPos={lat,lng,acc:acc||20};
   if(!me){
-    accCircle=L.circle([lat,lng],{radius:Math.min(acc||20,80),color:'#3b82f6',weight:1,fillColor:'#3b82f6',fillOpacity:.12,pane:'me'}).addTo(map);
+    accCircle=L.circle([lat,lng],{radius:20,color:'#2563eb',weight:2,fillColor:'#3b82f6',fillOpacity:.15,pane:'me'}).addTo(map);
     me=L.circleMarker([lat,lng],{radius:7,color:'#fff',weight:3,fillColor:'#2563eb',fillOpacity:1,pane:'me'}).addTo(map);
   }else{
     me.setLatLng([lat,lng]);
     accCircle.setLatLng([lat,lng]);
-    accCircle.setRadius(Math.min(acc||20,80));
+    accCircle.setRadius(20);
   }
 }
 function applyFix(pos){
   reportPos={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy||20,at:Date.now()};
   showMe(reportPos.lat,reportPos.lng,reportPos.acc);
-  const acc=Math.round(reportPos.acc);
-  $('loc').textContent='Location updated to this photo spot, about '+acc+' m accuracy.';
+  $('loc').textContent='Location updated. Blue circle is a 20 m radius.';
   ready();
 }
 function stopWatch(){
@@ -257,7 +257,7 @@ $('submit').onclick=async()=>{
   let match=null,best=1e9;
   pins.forEach(p=>{
     const d=hav(reportPos.lat,reportPos.lng,p.lat,p.lng);
-    const rad=Math.max(12,Math.min(40,Math.sqrt((reportPos.acc||15)**2+(p.accuracy||15)**2)+4));
+    const rad=20;
     if(d<=rad&&d<best){best=d;match=p}
   });
   if(match){
