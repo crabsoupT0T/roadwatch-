@@ -68,17 +68,20 @@ input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12
 .sug{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:#fff;padding:10px 12px;font:13px Inter}
 #routeNote{margin-top:6px;background:var(--asphalt);color:var(--paper);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.4}
 .toast{top:auto;bottom:96px}
-</style>
+#langMenu{position:fixed;top:62px;right:14px;z-index:1700;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.25);min-width:140px}#langMenu button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:#fff;padding:11px 14px;font:14px Inter}#langMenu button.on{background:#26282a;color:#f7f5f0}.head-actions{display:flex;gap:8px;align-items:center}</style>
 </head>
 <body>
 <div id="app">
 <header>
-  <div><h1>RoadWatch</h1><div class="tag">Live community map</div></div>
-  <button class="list-toggle" id="panelToggle" type="button">Priority list <span id="count">0</span></button>
+  <div><h1>RoadWatch</h1><div class="tag" data-i18n="tag">Live community map</div></div>
+  <div class="head-actions">
+    <button class="list-toggle" id="langBtn" type="button" aria-label="Language">EN</button>
+    <button class="list-toggle" id="panelToggle" type="button"><span data-i18n="priList">Priority list</span> <span id="count">0</span></button>
+  </div>
 </header>
 <main><div id="map"></div></main>
 </div>
-<aside id="panel"><div class="panel-head"><button id="panelClose" type="button">Map</button><div><h2>Rankings</h2><p>Sorted by confirms. Tap a rank to open it on the map.</p></div></div><div id="panelList"></div></aside>
+<aside id="panel"><div class="panel-head"><button id="panelClose" type="button" data-i18n="map">Map</button><div><h2 data-i18n="rankings">Rankings</h2><p data-i18n="rankHint">Sorted by how bad the road is. Tap a row to open it.</p></div></div><div id="panelList"></div></aside>
 <div class="ui zoombar">
   <button class="zbtn" id="zoomIn" type="button" aria-label="Zoom in">+</button>
   <button class="zbtn" id="zoomOut" type="button" aria-label="Zoom out">−</button>
@@ -86,36 +89,37 @@ input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12
 <div class="ui fabs">
   <button class="fab active" id="heatBtn" type="button" title="Hotspots" aria-label="Hotspots"></button>
   <button class="fab" id="locateBtn" type="button" title="My location" aria-label="My location">⌖</button>
-  <button class="report" id="reportBtn" type="button">Report damage</button>
+  <button class="report" id="reportBtn" type="button" data-i18n="report">Report damage</button>
 </div>
 <div class="routebox" id="routeBox">
   <form id="routeForm">
-    <input id="dest" type="search" placeholder="Where to? Bad roads are avoided" autocomplete="off" enterkeyhint="search">
-    <button id="routeGo" type="submit">Route</button>
-    <button id="routeClear" type="button" hidden>Clear</button>
+    <input id="dest" type="search" data-i18n-ph="dest" placeholder="Where to? Bad roads are avoided" autocomplete="off" enterkeyhint="search">
+    <button id="routeGo" type="submit" data-i18n="route">Route</button>
+    <button id="routeClear" type="button" hidden data-i18n="clear">Clear</button>
   </form>
   <div id="suggest" hidden></div>
   <div id="routeNote" hidden></div>
 </div>
-<div class="legend" id="legend"><div>Hotspot density</div><div class="bar"></div></div>
+<div class="legend" id="legend"><div data-i18n="hotspot">Hotspot density</div><div class="bar"></div></div>
+<div id="langMenu" hidden></div>
 <div class="toast" id="toast"></div>
 <div class="back" id="back">
 <div class="modal">
-<h2 style="font-family:Oswald,sans-serif;margin:0 0 6px">Report road damage</h2>
-<p style="color:#6b6b68;font-size:12.5px">Photo and GPS. A nearby report adds a confirm instead of a second pin.</p>
-<label class="zone" id="zone">Tap to take or choose a photo<input id="file" type="file" accept="image/*" capture="environment" hidden></label>
-<div class="preview" id="preview" hidden><img id="previewImg" alt=""><button type="button" id="retake">Retake</button></div>
-<div class="loc" id="loc">Finding your location…</div>
-<input id="phone" type="tel" placeholder="Your phone number">
-<p class="how">How bad is the road?</p>
+<h2 style="font-family:Oswald,sans-serif;margin:0 0 6px" data-i18n="reportTitle">Report road damage</h2>
+<p style="color:#6b6b68;font-size:12.5px" data-i18n="reportHelp">Photo and GPS. A nearby report adds a confirm instead of a second pin.</p>
+<label class="zone" id="zone"><span data-i18n="photo">Tap to take or choose a photo</span><input id="file" type="file" accept="image/*" capture="environment" hidden></label>
+<div class="preview" id="preview" hidden><img id="previewImg" alt=""><button type="button" id="retake" data-i18n="retake">Retake</button></div>
+<div class="loc" id="loc" data-i18n="finding">Finding your location…</div>
+<input id="phone" type="tel" data-i18n-ph="phonePh" placeholder="Your phone number">
+<p class="how" data-i18n="how">How bad is the road?</p>
 <div class="sev-pick" id="sevPick">
-  <button type="button" data-sev="minor">Minor</button>
-  <button type="button" data-sev="rough">Rough</button>
-  <button type="button" data-sev="severe">Severe</button>
-  <button type="button" data-sev="dangerous">Dangerous</button>
+  <button type="button" data-sev="minor" data-i18n="minor">Minor</button>
+  <button type="button" data-sev="rough" data-i18n="rough">Rough</button>
+  <button type="button" data-sev="severe" data-i18n="severe">Severe</button>
+  <button type="button" data-sev="dangerous" data-i18n="dangerous">Dangerous</button>
 </div>
-<input id="note" type="text" placeholder="Short note (optional)" maxlength="140">
-<div class="actions"><button class="btn cancel" id="cancel" type="button">Cancel</button><button class="btn go" id="submit" type="button" disabled>Submit report</button></div>
+<input id="note" type="text" data-i18n-ph="notePh" placeholder="Short note (optional)" maxlength="140">
+<div class="actions"><button class="btn cancel" id="cancel" type="button" data-i18n="cancel">Cancel</button><button class="btn go" id="submit" type="button" disabled data-i18n="submit">Submit report</button></div>
 </div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
@@ -123,9 +127,21 @@ input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12
 const KEY='roadwatch-live-v2';
 let map,markers,heat,pins=[],me,accCircle,myPos,photo,reportPos,heatOn=true,zooming=false,reportWatch=null,reportSev=null;
 const $=id=>document.getElementById(id);
+const I18N={"en":{"tag":"Live community map","priList":"Priority list","map":"Map","rankings":"Rankings","rankHint":"Sorted by how bad the road is. Tap a row to open it.","report":"Report damage","dest":"Where to? Bad roads are avoided","route":"Route","clear":"Clear","hotspot":"Hotspot density","reportTitle":"Report road damage","reportHelp":"Photo and GPS. A nearby report adds a confirm instead of a second pin.","photo":"Tap to take or choose a photo","retake":"Retake","finding":"Finding your location…","phonePh":"Your phone number","how":"How bad is the road?","minor":"Minor","rough":"Rough","severe":"Severe","dangerous":"Dangerous","notePh":"Short note (optional)","cancel":"Cancel","submit":"Submit report","empty":"No reports on this phone yet. Tap Report damage.","reported":"Reported","confirmed":"Confirmed","priority":"Priority","locUpdated":"Location updated. Blue circle is a 20 m radius.","noGps":"Location unavailable","allowGps":"Allow location access","noGpsPhone":"This phone has no location.","allowAgain":"Allow location and try again.","retakeLoc":"Retake the photo so location can update.","badPhoto":"Could not read that photo","photoTaken":"Photo taken. Updating location…","noUpdate":"Could not update location. Stand outside and retake the photo.","locToast":"Location did not update","needPhoto":"Take a photo first","checking":"Checking location one more time…","stale":"Location is not current. Retake the photo outside.","already":"This number already confirmed that spot","confirmedPin":"Confirm added on the existing pin","dropped":"Damage pin dropped here","photoBig":"Pin saved. Photo was too large to keep on this phone.","noStore":"Pin is on the map, but this phone is out of storage.","rerouted":"Rerouted around the bad road. {0} km, about {1} min.","noClear":"No clear road around {0} damaged spot. {1} km, about {2} min.","noClearMany":"No clear road around {0} damaged spots. {1} km, about {2} min.","clearRoad":"This road looks clear. {0} km, about {1} min.","needStart":"Allow location so the route can start from you","needDest":"Choose a destination","checkingRoads":"Checking the roads…","routeFail":"Could not build a route. Check the connection and try again.","routeToast":"Routing failed","searchFail":"Could not search that place","noPlace":"No matching place","oneReport":"{0} report","manyReports":"{0} reports"},"hi":{"tag":"सामुदायिक नक्शा","priList":"प्राथमिकता सूची","map":"नक्शा","rankings":"रैंकिंग","rankHint":"जितनी खराब सड़क, उतना ऊपर। पंक्ति दबाकर जगह खोलें।","report":"नुकसान बताएं","dest":"कहाँ जाना है? खराब सड़क बचाई जाएगी","route":"रास्ता","clear":"हटाएं","hotspot":"नुकसान की सघनता","reportTitle":"सड़क का नुकसान बताएं","reportHelp":"फोटो और जगह। पास की रिपोर्ट दूसरे पिन की जगह पुष्टि बन जाती है।","photo":"फोटो लें या चुनें","retake":"फिर से लें","finding":"जगह खोजी जा रही है…","phonePh":"आपका फ़ोन नंबर","how":"सड़क कितनी खराब है?","minor":"हल्की","rough":"खुरदुरी","severe":"गंभीर","dangerous":"खतरनाक","notePh":"छोटा नोट (ज़रूरी नहीं)","cancel":"रद्द","submit":"रिपोर्ट भेजें","empty":"इस फ़ोन पर अभी कोई रिपोर्ट नहीं। नुकसान बताएं दबाएं।","reported":"दर्ज","confirmed":"पुष्टि","priority":"प्राथमिकता","locUpdated":"जगह अपडेट हो गई। नीला घेरा 20 मीटर है।","noGps":"जगह उपलब्ध नहीं","allowGps":"जगह की अनुमति दें","noGpsPhone":"इस फ़ोन में जगह नहीं है।","allowAgain":"जगह की अनुमति देकर फिर कोशिश करें।","retakeLoc":"जगह अपडेट करने के लिए फोटो फिर लें।","badPhoto":"यह फोटो नहीं पढ़ी जा सकी","photoTaken":"फोटो ले ली गई। जगह अपडेट हो रही है…","noUpdate":"जगह अपडेट नहीं हुई। बाहर खड़े होकर फोटो फिर लें।","locToast":"जगह अपडेट नहीं हुई","needPhoto":"पहले फोटो लें","checking":"जगह फिर जाँची जा रही है…","stale":"जगह पुरानी है। बाहर फोटो फिर लें।","already":"इस नंबर ने इस जगह की पुष्टि कर दी है","confirmedPin":"मौजूदा पिन पर पुष्टि जुड़ गई","dropped":"नुकसान का पिन यहाँ लगा","photoBig":"पिन बच गया। फोटो इस फ़ोन पर रखने के लिए बड़ी थी।","noStore":"पिन नक्शे पर है, पर फ़ोन में जगह नहीं बची।","rerouted":"खराब सड़क से हटाकर रास्ता बनाया। {0} किमी, लगभग {1} मिनट।","noClear":"{0} खराब जगह से बचने का साफ रास्ता नहीं। {1} किमी, लगभग {2} मिनट।","noClearMany":"{0} खराब जगहों से बचने का साफ रास्ता नहीं। {1} किमी, लगभग {2} मिनट।","clearRoad":"यह सड़क साफ लग रही है। {0} किमी, लगभग {1} मिनट।","needStart":"रास्ता आपसे शुरू हो, इसके लिए जगह की अनुमति दें","needDest":"मंज़िल चुनें","checkingRoads":"सड़कें जाँची जा रही हैं…","routeFail":"रास्ता नहीं बन सका। कनेक्शन जाँचकर फिर कोशिश करें।","routeToast":"रास्ता नहीं बना","searchFail":"वह जगह नहीं मिली","noPlace":"कोई मेल खाती जगह नहीं","oneReport":"{0} रिपोर्ट","manyReports":"{0} रिपोर्ट"},"kn":{"tag":"ಸಮುದಾಯ ನಕ್ಷೆ","priList":"ಆದ್ಯತೆ ಪಟ್ಟಿ","map":"ನಕ್ಷೆ","rankings":"ಶ್ರೇಣಿ","rankHint":"ಕೆಟ್ಟ ರಸ್ತೆ ಮೇಲಿರುತ್ತದೆ. ಸಾಲು ಒತ್ತಿ ಜಾಗ ತೆರೆಯಿರಿ.","report":"ಹಾನಿ ವರದಿ","dest":"ಎಲ್ಲಿಗೆ? ಕೆಟ್ಟ ರಸ್ತೆ ತಪ್ಪಿಸಲಾಗುತ್ತದೆ","route":"ಮಾರ್ಗ","clear":"ಅಳಿಸಿ","hotspot":"ಹಾನಿಯ ಸಾಂದ್ರತೆ","reportTitle":"ರಸ್ತೆ ಹಾನಿ ವರದಿ","reportHelp":"ಫೋಟೋ ಮತ್ತು ಸ್ಥಳ. ಹತ್ತಿರದ ವರದಿ ಹೊಸ ಪಿನ್ ಅಲ್ಲ, ದೃಢೀಕರಣ.","photo":"ಫೋಟೋ ತೆಗೆಯಿರಿ ಅಥವಾ ಆಯ್ಕೆಮಾಡಿ","retake":"ಮತ್ತೆ ತೆಗೆಯಿರಿ","finding":"ಸ್ಥಳ ಹುಡುಕಲಾಗುತ್ತಿದೆ…","phonePh":"ನಿಮ್ಮ ಫೋನ್ ಸಂಖ್ಯೆ","how":"ರಸ್ತೆ ಎಷ್ಟು ಕೆಟ್ಟಿದೆ?","minor":"ಸಣ್ಣ","rough":"ಒರಟು","severe":"ತೀವ್ರ","dangerous":"ಅಪಾಯಕಾರಿ","notePh":"ಚಿಕ್ಕ ಟಿಪ್ಪಣಿ (ಐಚ್ಛಿಕ)","cancel":"ರದ್ದು","submit":"ವರದಿ ಕಳುಹಿಸಿ","empty":"ಈ ಫೋನಿನಲ್ಲಿ ಇನ್ನೂ ವರದಿ ಇಲ್ಲ. ಹಾನಿ ವರದಿ ಒತ್ತಿ.","reported":"ವರದಿ","confirmed":"ದೃಢ","priority":"ಆದ್ಯತೆ","locUpdated":"ಸ್ಥಳ ನವೀಕರಿಸಲಾಗಿದೆ. ನೀಲಿ ವೃತ್ತ 20 ಮೀಟರ್.","noGps":"ಸ್ಥಳ ಲಭ್ಯವಿಲ್ಲ","allowGps":"ಸ್ಥಳ ಅನುಮತಿ ನೀಡಿ","noGpsPhone":"ಈ ಫೋನಿನಲ್ಲಿ ಸ್ಥಳವಿಲ್ಲ.","allowAgain":"ಸ್ಥಳ ಅನುಮತಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.","retakeLoc":"ಸ್ಥಳ ನವೀಕರಿಸಲು ಫೋಟೋ ಮತ್ತೆ ತೆಗೆಯಿರಿ.","badPhoto":"ಆ ಫೋಟೋ ಓದಲಾಗಲಿಲ್ಲ","photoTaken":"ಫೋಟೋ ತೆಗೆಯಲಾಗಿದೆ. ಸ್ಥಳ ನವೀಕರಿಸಲಾಗುತ್ತಿದೆ…","noUpdate":"ಸ್ಥಳ ನವೀಕರಿಸಲಿಲ್ಲ. ಹೊರಗೆ ನಿಂತು ಫೋಟೋ ಮತ್ತೆ ತೆಗೆಯಿರಿ.","locToast":"ಸ್ಥಳ ನವೀಕರಿಸಲಿಲ್ಲ","needPhoto":"ಮೊದಲು ಫೋಟೋ ತೆಗೆಯಿರಿ","checking":"ಸ್ಥಳವನ್ನು ಮತ್ತೆ ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…","stale":"ಸ್ಥಳ ಹಳೆಯದು. ಹೊರಗೆ ಫೋಟೋ ಮತ್ತೆ ತೆಗೆಯಿರಿ.","already":"ಈ ಸಂಖ್ಯೆ ಈ ಜಾಗವನ್ನು ಈಗಾಗಲೇ ದೃಢೀಕರಿಸಿದೆ","confirmedPin":"ಇರುವ ಪಿನ್‌ಗೆ ದೃಢೀಕರಣ ಸೇರಿಸಲಾಗಿದೆ","dropped":"ಹಾನಿ ಪಿನ್ ಇಲ್ಲಿ ಬಿದ್ದಿದೆ","photoBig":"ಪಿನ್ ಉಳಿಯಿತು. ಫೋಟೋ ಈ ಫೋನಿಗೆ ದೊಡ್ಡದಾಗಿತ್ತು.","noStore":"ಪಿನ್ ನಕ್ಷೆಯಲ್ಲಿದೆ, ಆದರೆ ಫೋನಿನಲ್ಲಿ ಜಾಗವಿಲ್ಲ.","rerouted":"ಕೆಟ್ಟ ರಸ್ತೆಯನ್ನು ತಪ್ಪಿಸಿ ಮಾರ್ಗ ಬದಲಾಯಿಸಲಾಗಿದೆ. {0} ಕಿಮೀ, ಸುಮಾರು {1} ನಿಮಿಷ.","noClear":"{0} ಹಾನಿ ಜಾಗವನ್ನು ತಪ್ಪಿಸುವ ಸ್ಪಷ್ಟ ರಸ್ತೆ ಇಲ್ಲ. {1} ಕಿಮೀ, ಸುಮಾರು {2} ನಿಮಿಷ.","noClearMany":"{0} ಹಾನಿ ಜಾಗಗಳನ್ನು ತಪ್ಪಿಸುವ ಸ್ಪಷ್ಟ ರಸ್ತೆ ಇಲ್ಲ. {1} ಕಿಮೀ, ಸುಮಾರು {2} ನಿಮಿಷ.","clearRoad":"ಈ ರಸ್ತೆ ಸ್ಪಷ್ಟವಾಗಿ ಕಾಣುತ್ತದೆ. {0} ಕಿಮೀ, ಸುಮಾರು {1} ನಿಮಿಷ.","needStart":"ಮಾರ್ಗ ನಿಮ್ಮಿಂದ ಆರಂಭವಾಗಲು ಸ್ಥಳ ಅನುಮತಿಸಿ","needDest":"ಗಮ್ಯಸ್ಥಾನ ಆಯ್ಕೆಮಾಡಿ","checkingRoads":"ರಸ್ತೆಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…","routeFail":"ಮಾರ್ಗ ಸಿಗಲಿಲ್ಲ. ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.","routeToast":"ಮಾರ್ಗ ವಿಫಲ","searchFail":"ಆ ಜಾಗ ಸಿಗಲಿಲ್ಲ","noPlace":"ಹೊಂದುವ ಜಾಗ ಇಲ್ಲ","oneReport":"{0} ವರದಿ","manyReports":"{0} ವರದಿಗಳು"},"mr":{"tag":"समुदाय नकाशा","priList":"प्राधान्य यादी","map":"नकाशा","rankings":"क्रम","rankHint":"जितका वाईट रस्ता, तितका वर. ओळ दाबून जागा उघडा.","report":"नुकसान नोंदवा","dest":"कुठे जायचे? वाईट रस्ते टाळले जातील","route":"मार्ग","clear":"काढा","hotspot":"नुकसानीची गर्दी","reportTitle":"रस्त्याचे नुकसान नोंदवा","reportHelp":"फोटो आणि ठिकाण. जवळची नोंद नवीन पिन न होता पुष्टी होते.","photo":"फोटो काढा किंवा निवडा","retake":"पुन्हा काढा","finding":"ठिकाण शोधले जात आहे…","phonePh":"तुमचा फोन नंबर","how":"रस्ता किती वाईट आहे?","minor":"हलका","rough":"खडबडीत","severe":"गंभीर","dangerous":"धोकादायक","notePh":"छोटी नोंद (ऐच्छिक)","cancel":"रद्द","submit":"नोंद पाठवा","empty":"या फोनवर अजून नोंद नाही. नुकसान नोंदवा दाबा.","reported":"नोंदवले","confirmed":"पुष्टी","priority":"प्राधान्य","locUpdated":"ठिकाण अपडेट झाले. निळे वर्तुळ 20 मीटर आहे.","noGps":"ठिकाण उपलब्ध नाही","allowGps":"ठिकाणाची परवानगी द्या","noGpsPhone":"या फोनवर ठिकाण नाही.","allowAgain":"ठिकाण परवानगी देऊन पुन्हा प्रयत्न करा.","retakeLoc":"ठिकाण अपडेट करण्यासाठी फोटो पुन्हा काढा.","badPhoto":"तो फोटो वाचता आला नाही","photoTaken":"फोटो काढला. ठिकाण अपडेट होत आहे…","noUpdate":"ठिकाण अपडेट झाले नाही. बाहेर उभे राहून फोटो पुन्हा काढा.","locToast":"ठिकाण अपडेट झाले नाही","needPhoto":"आधी फोटो काढा","checking":"ठिकाण पुन्हा तपासले जात आहे…","stale":"ठिकाण जुने आहे. बाहेर फोटो पुन्हा काढा.","already":"या नंबरने ही जागा आधीच पुष्टी केली आहे","confirmedPin":"असलेल्या पिनवर पुष्टी जोडली","dropped":"नुकसानीचा पिन येथे लागला","photoBig":"पिन जपला. फोटो या फोनसाठी मोठा होता.","noStore":"पिन नकाशावर आहे, पण फोनमध्ये जागा नाही.","rerouted":"वाईट रस्ता टाळून मार्ग बदलला. {0} किमी, सुमारे {1} मिनिटे.","noClear":"{0} खराब जागा टाळण्याचा स्पष्ट रस्ता नाही. {1} किमी, सुमारे {2} मिनिटे.","noClearMany":"{0} खराब जागा टाळण्याचा स्पष्ट रस्ता नाही. {1} किमी, सुमारे {2} मिनिटे.","clearRoad":"हा रस्ता स्वच्छ दिसतो आहे. {0} किमी, सुमारे {1} मिनिटे.","needStart":"मार्ग तुमच्यापासून सुरू होण्यासाठी ठिकाण परवानगी द्या","needDest":"गंतव्य निवडा","checkingRoads":"रस्ते तपासले जात आहेत…","routeFail":"मार्ग बनला नाही. कनेक्शन तपासा आणि पुन्हा प्रयत्न करा.","routeToast":"मार्ग अयशस्वी","searchFail":"ती जागा सापडली नाही","noPlace":"जुळणारी जागा नाही","oneReport":"{0} नोंद","manyReports":"{0} नोंदी"},"ta":{"tag":"சமூக வரைபடம்","priList":"முன்னுரிமை பட்டியல்","map":"வரைபடம்","rankings":"தரவரிசை","rankHint":"மோசமான சாலை மேலே இருக்கும். வரிசையைத் தட்டி இடத்தைத் திறக்கவும்.","report":"சேதத்தை தெரிவி","dest":"எங்கே? மோசமான சாலை தவிர்க்கப்படும்","route":"வழி","clear":"அழி","hotspot":"சேத அடர்த்தி","reportTitle":"சாலை சேதத்தை தெரிவி","reportHelp":"புகைப்படமும் இடமும். அருகிலுள்ள அறிக்கை புதிய முள்ளை அல்ல, உறுதிப்படுத்தல்.","photo":"புகைப்படம் எடுக்கவும் அல்லது தேர்ந்தெடுக்கவும்","retake":"மீண்டும் எடு","finding":"இடம் தேடப்படுகிறது…","phonePh":"உங்கள் தொலைபேசி எண்","how":"சாலை எவ்வளவு மோசம்?","minor":"சிறியது","rough":"சொரசொரப்பு","severe":"கடுமை","dangerous":"ஆபத்தானது","notePh":"குறுகிய குறிப்பு (கட்டாயம் இல்லை)","cancel":"ரத்து","submit":"அறிக்கை அனுப்பு","empty":"இந்த தொலைபேசியில் இன்னும் அறிக்கை இல்லை. சேதத்தை தெரிவி என்பதைத் தட்டவும்.","reported":"தெரிவித்தது","confirmed":"உறுதி","priority":"முன்னுரிமை","locUpdated":"இடம் புதுப்பிக்கப்பட்டது. நீல வட்டம் 20 மீட்டர்.","noGps":"இடம் இல்லை","allowGps":"இட அனுமதி கொடுங்கள்","noGpsPhone":"இந்த தொலைபேசியில் இடம் இல்லை.","allowAgain":"இட அனுமதி கொடுத்து மீண்டும் முயலவும்.","retakeLoc":"இடம் புதுப்பிக்க புகைப்படத்தை மீண்டும் எடுக்கவும்.","badPhoto":"அந்த புகைப்படம் படிக்கப்படவில்லை","photoTaken":"புகைப்படம் எடுக்கப்பட்டது. இடம் புதுப்பிக்கப்படுகிறது…","noUpdate":"இடம் புதுப்பிக்கப்படவில்லை. வெளியே நின்று புகைப்படத்தை மீண்டும் எடுக்கவும்.","locToast":"இடம் புதுப்பிக்கப்படவில்லை","needPhoto":"முதலில் புகைப்படம் எடுக்கவும்","checking":"இடம் மீண்டும் சரிபார்க்கப்படுகிறது…","stale":"இடம் பழையது. வெளியே புகைப்படத்தை மீண்டும் எடுக்கவும்.","already":"இந்த எண் இந்த இடத்தை ஏற்கனவே உறுதி செய்தது","confirmedPin":"இருக்கும் முள்ளில் உறுதி சேர்க்கப்பட்டது","dropped":"சேத முள் இங்கே விழுந்தது","photoBig":"முள் சேமிக்கப்பட்டது. புகைப்படம் இந்த தொலைபேசிக்கு பெரிதாக இருந்தது.","noStore":"முள் வரைபடத்தில் உள்ளது, ஆனால் தொலைபேசியில் இடம் இல்லை.","rerouted":"மோசமான சாலையைத் தவிர்த்து வழி மாற்றப்பட்டது. {0} கிமீ, சுமார் {1} நிமிடம்.","noClear":"{0} சேத இடத்தைத் தவிர்க்க தெளிவான சாலை இல்லை. {1} கிமீ, சுமார் {2} நிமிடம்.","noClearMany":"{0} சேத இடங்களைத் தவிர்க்க தெளிவான சாலை இல்லை. {1} கிமீ, சுமார் {2} நிமிடம்.","clearRoad":"இந்த சாலை தெளிவாகத் தெரிகிறது. {0} கிமீ, சுமார் {1} நிமிடம்.","needStart":"வழி உங்களிடமிருந்து தொடங்க இட அனுமதி கொடுங்கள்","needDest":"சேரும் இடத்தைத் தேர்ந்தெடுக்கவும்","checkingRoads":"சாலைகள் சரிபார்க்கப்படுகின்றன…","routeFail":"வழி கிடைக்கவில்லை. இணைப்பைச் சரிபார்த்து மீண்டும் முயலவும்.","routeToast":"வழி தோல்வி","searchFail":"அந்த இடம் கிடைக்கவில்லை","noPlace":"பொருந்தும் இடம் இல்லை","oneReport":"{0} அறிக்கை","manyReports":"{0} அறிக்கைகள்"},"te":{"tag":"సామూహిక పటం","priList":"ప్రాధాన్య జాబితా","map":"పటం","rankings":"ర్యాంకులు","rankHint":"ఎంత చెడు రోడ్డో అంత పైన. వరుసను నొక్కి చోటు తెరవండి.","report":"నష్టాన్ని తెలపండి","dest":"ఎక్కడికి? చెడు రోడ్లు తప్పించబడతాయి","route":"మార్గం","clear":"తొలగించు","hotspot":"నష్టపు సాంద్రత","reportTitle":"రోడ్డు నష్టాన్ని తెలపండి","reportHelp":"ఫోటో మరియు చోటు. దగ్గరి నివేదిక కొత్త పిన్ కాదు, నిర్ధారణ.","photo":"ఫోటో తీయండి లేదా ఎంచుకోండి","retake":"మళ్లీ తీయండి","finding":"చోటు వెతుకుతోంది…","phonePh":"మీ ఫోన్ నంబర్","how":"రోడ్డు ఎంత పాడైంది?","minor":"చిన్నది","rough":"గరుకు","severe":"తీవ్రం","dangerous":"ప్రమాదకరం","notePh":"చిన్న గమనిక (తప్పనిసరి కాదు)","cancel":"రద్దు","submit":"నివేదిక పంపండి","empty":"ఈ ఫోన్‌లో ఇంకా నివేదిక లేదు. నష్టాన్ని తెలపండి నొక్కండి.","reported":"నివేదించినది","confirmed":"నిర్ధారణ","priority":"ప్రాధాన్యం","locUpdated":"చోటు నవీకరించబడింది. నీలి వృత్తం 20 మీటర్లు.","noGps":"చోటు అందుబాటులో లేదు","allowGps":"చోటు అనుమతి ఇవ్వండి","noGpsPhone":"ఈ ఫోన్‌లో చోటు లేదు.","allowAgain":"చోటు అనుమతించి మళ్లీ ప్రయత్నించండి.","retakeLoc":"చోటు నవీకరించడానికి ఫోటో మళ్లీ తీయండి.","badPhoto":"ఆ ఫోటో చదవలేకపోయింది","photoTaken":"ఫోటో తీయబడింది. చోటు నవీకరించబడుతోంది…","noUpdate":"చోటు నవీకరించబడలేదు. బయట నిలబడి ఫోటో మళ్లీ తీయండి.","locToast":"చోటు నవీకరించబడలేదు","needPhoto":"ముందు ఫోటో తీయండి","checking":"చోటు మళ్లీ తనిఖీ అవుతోంది…","stale":"చోటు పాతది. బయట ఫోటో మళ్లీ తీయండి.","already":"ఈ నంబర్ ఈ చోటును ఇప్పటికే నిర్ధారించింది","confirmedPin":"ఉన్న పిన్‌కు నిర్ధారణ జోడించబడింది","dropped":"నష్టపు పిన్ ఇక్కడ పడింది","photoBig":"పిన్ సేవ్ అయింది. ఫోటో ఈ ఫోన్‌కు పెద్దది.","noStore":"పిన్ పటంలో ఉంది, కానీ ఫోన్‌లో చోటు లేదు.","rerouted":"చెడు రోడ్డును తప్పించి మార్గం మార్చబడింది. {0} కి.మీ, దాదాపు {1} నిమిషం.","noClear":"{0} నష్టపు చోటును తప్పించే స్పష్టమైన రోడ్డు లేదు. {1} కి.మీ, దాదాపు {2} నిమిషం.","noClearMany":"{0} నష్టపు చోట్లను తప్పించే స్పష్టమైన రోడ్డు లేదు. {1} కి.మీ, దాదాపు {2} నిమిషం.","clearRoad":"ఈ రోడ్డు స్పష్టంగా కనిపిస్తోంది. {0} కి.మీ, దాదాపు {1} నిమిషం.","needStart":"మార్గం మీ నుంచి మొదలవ్వడానికి చోటు అనుమతించండి","needDest":"గమ్యం ఎంచుకోండి","checkingRoads":"రోడ్లు తనిఖీ అవుతున్నాయి…","routeFail":"మార్గం రాలేదు. కనెక్షన్ చూసి మళ్లీ ప్రయత్నించండి.","routeToast":"మార్గం విఫలమైంది","searchFail":"ఆ చోటు దొరకలేదు","noPlace":"సరిపోలే చోటు లేదు","oneReport":"{0} నివేదిక","manyReports":"{0} నివేదికలు"}};
+let lang=localStorage.getItem('roadwatch-lang')||'en';
+if(!I18N[lang]) lang='en';
+let lastNote=null;
+function tr(k){const pack=I18N[lang]||I18N.en;let s=(pack[k]!=null?pack[k]:(I18N.en[k]!=null?I18N.en[k]:k));for(let i=1;i<arguments.length;i++)s=s.split('{'+(i-1)+'}').join(String(arguments[i]));return s}
+function applyLang(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=tr(el.getAttribute('data-i18n'))});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=tr(el.getAttribute('data-i18n-ph'))});
+  const b=$('langBtn'); if(b) b.textContent=lang.toUpperCase();
+  if(lastNote){$('routeNote').hidden=false;$('routeNote').textContent=tr.apply(null,lastNote)}
+  if(typeof map!=='undefined'&&map&&typeof draw==='function') draw();
+}
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2600)}
-const WORDS={minor:{l:'Minor',c:'#4c7a5e',k:'sev-reported',r:1},rough:{l:'Rough',c:'#e0a106',k:'sev-confirmed',r:2},severe:{l:'Severe',c:'#c4432b',k:'sev-priority',r:3},dangerous:{l:'Dangerous',c:'#7a1f14',k:'sev-danger',r:4}};
-function sevOf(p){if(p&&WORDS[p.severity])return WORDS[p.severity];const v=(p&&p.votes)||1;if(v>=5)return{l:'Priority',c:'#c4432b',k:'sev-priority',r:3};if(v>=2)return{l:'Confirmed',c:'#f2a93b',k:'sev-confirmed',r:2};return{l:'Reported',c:'#4c7a5e',k:'sev-reported',r:1}}
+const WORDS={minor:{c:'#4c7a5e',k:'sev-reported',r:1},rough:{c:'#e0a106',k:'sev-confirmed',r:2},severe:{c:'#c4432b',k:'sev-priority',r:3},dangerous:{c:'#7a1f14',k:'sev-danger',r:4}};
+function sevOf(p){if(p&&WORDS[p.severity])return Object.assign({l:tr(p.severity)},WORDS[p.severity]);const v=(p&&p.votes)||1;if(v>=5)return{l:tr('priority'),c:'#c4432b',k:'sev-priority',r:3};if(v>=2)return{l:tr('confirmed'),c:'#f2a93b',k:'sev-confirmed',r:2};return{l:tr('reported'),c:'#4c7a5e',k:'sev-reported',r:1}}
 function ago(iso){const s=Math.floor((Date.now()-new Date(iso))/1000);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
 function hav(a,b,c,d){const R=6371000,r=x=>x*Math.PI/180,x=r(c-a),y=r(d-b),k=Math.sin(x/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(y/2)**2;return R*2*Math.atan2(Math.sqrt(k),Math.sqrt(1-k))}
 function pinIcon(color){return L.divIcon({className:'pin-wrap',html:'<div class="pin" style="background:'+color+'"></div>',iconSize:[26,26],iconAnchor:[13,24],popupAnchor:[0,-22]})}
@@ -139,14 +155,14 @@ function save(){
   try{localStorage.setItem(KEY,JSON.stringify(pins));return}
   catch(e){
     const lite=pins.map(p=>({id:p.id,lat:p.lat,lng:p.lng,accuracy:p.accuracy,votes:p.votes,note:p.note||'',severity:p.severity||'',firstReported:p.firstReported,voters:p.voters||[],photo:''}));
-    try{localStorage.setItem(KEY,JSON.stringify(lite));toast('Pin saved. Photo was too large to keep on this phone.')}
-    catch(e2){toast('Pin is on the map, but this phone is out of storage.')}
+    try{localStorage.setItem(KEY,JSON.stringify(lite));toast(tr('photoBig'))}
+    catch(e2){toast(tr('noStore'))}
   }
 }
 function popupHtml(p,s){
   const img=p.photo?'<img src="'+p.photo+'" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:6px">':'';
   const note=p.note?'<div>'+String(p.note).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>':'';
-  return img+'<div><b>'+s.l+'</b> · '+p.votes+' '+(p.votes===1?'report':'reports')+'</div>'+note+'<div style="color:#6b6b68">'+ago(p.firstReported)+'</div>';
+  return img+'<div><b>'+s.l+'</b> · '+tr(p.votes===1?'oneReport':'manyReports', p.votes)+'</div>'+note+'<div style="color:#6b6b68">'+ago(p.firstReported)+'</div>';
 }
 function syncHeat(){
   if(heat){map.removeLayer(heat);heat=null}
@@ -166,7 +182,7 @@ function draw(){
   syncHeat();
   const list=$('panelList');
   list.replaceChildren();
-  if(!pins.length){list.innerHTML='<div class="empty">No reports on this phone yet. Tap Report damage.</div>';return}
+  if(!pins.length){list.innerHTML='<div class="empty">'+tr('empty')+'</div>';return}
   const sorted=pins.slice().sort((a,b)=>((sevOf(b).r*100)+(b.votes||1))-((sevOf(a).r*100)+(a.votes||1)));
   sorted.forEach((p,i)=>{
     const s=sevOf(p);
@@ -224,7 +240,7 @@ function showMe(lat,lng,acc){
 function applyFix(pos){
   reportPos={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy||20,at:Date.now()};
   showMe(reportPos.lat,reportPos.lng,reportPos.acc);
-  $('loc').textContent='Location updated. Blue circle is a 20 m radius.';
+  $('loc').textContent=tr('locUpdated');
   ready();
 }
 function stopWatch(){
@@ -237,11 +253,11 @@ function freshFix(){
   });
 }
 function locate(recenter){
-  if(!navigator.geolocation){toast('Location unavailable');return}
+  if(!navigator.geolocation){toast(tr('noGps'));return}
   navigator.geolocation.getCurrentPosition(pos=>{
     showMe(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy);
     if(recenter)map.setView([pos.coords.latitude,pos.coords.longitude],16);
-  },()=>toast('Allow location access'),{enableHighAccuracy:true,timeout:10000,maximumAge:0});
+  },()=>toast(tr('allowGps')),{enableHighAccuracy:true,timeout:10000,maximumAge:0});
 }
 function compress(file){
   return new Promise((res,rej)=>{
@@ -288,36 +304,36 @@ $('reportBtn').onclick=()=>{
   photo=null;reportPos=null;reportSev=null;
   $('preview').hidden=true;$('zone').style.display='block';$('file').value='';
   $('sevPick').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
-  $('loc').textContent='Finding your location…';$('note').value='';ready();
+  $('loc').textContent=tr('finding');$('note').value='';ready();
   stopWatch();
-  if(!navigator.geolocation){$('loc').textContent='This phone has no location.';return}
+  if(!navigator.geolocation){$('loc').textContent=tr('noGpsPhone');return}
   reportWatch=navigator.geolocation.watchPosition(pos=>{
     if(!photo)applyFix(pos);
-  },()=>{$('loc').textContent='Allow location and try again.'},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+  },()=>{$('loc').textContent=tr('allowAgain')},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 };
 $('cancel').onclick=()=>{stopWatch();$('back').classList.remove('open')};
 $('back').onclick=e=>{if(e.target===$('back'))$('back').classList.remove('open')};
 $('zone').onclick=()=>$('file').click();
-$('retake').onclick=()=>{photo=null;reportPos=null;$('preview').hidden=true;$('zone').style.display='block';$('file').value='';$('loc').textContent='Retake the photo so location can update.';ready()};
+$('retake').onclick=()=>{photo=null;reportPos=null;$('preview').hidden=true;$('zone').style.display='block';$('file').value='';$('loc').textContent=tr('retakeLoc');ready()};
 $('file').onchange=async()=>{
   const f=$('file').files[0];
   if(!f)return;
-  try{photo=await compress(f)}catch(e){toast('Could not read that photo');return}
+  try{photo=await compress(f)}catch(e){toast(tr('badPhoto'));return}
   $('previewImg').src=photo;$('preview').hidden=false;$('zone').style.display='none';
   reportPos=null;ready();
-  $('loc').textContent='Photo taken. Updating location…';
+  $('loc').textContent=tr('photoTaken');
   try{applyFix(await freshFix())}
-  catch(e){$('loc').textContent='Could not update location. Stand outside and retake the photo.';toast('Location did not update')}
+  catch(e){$('loc').textContent=tr('noUpdate');toast(tr('locToast'))}
 };
 $('phone').oninput=ready;
 $('sevPick').onclick=e=>{const b=e.target.closest('button');if(!b)return;reportSev=b.dataset.sev;$('sevPick').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));ready()};
 
 $('phone').value=localStorage.getItem('roadwatch-phone')||'';
 $('submit').onclick=async()=>{
-  if(!photo){toast('Take a photo first');return}
-  $('loc').textContent='Checking location one more time…';
+  if(!photo){toast(tr('needPhoto'));return}
+  $('loc').textContent=tr('checking');
   try{applyFix(await freshFix())}catch(e){}
-  if(!reportPos || Date.now()-(reportPos.at||0)>30000){toast('Location is not current. Retake the photo outside.');return}
+  if(!reportPos || Date.now()-(reportPos.at||0)>30000){toast(tr('stale'));return}
   const phone=$('phone').value.replace(/\D/g,'');
   let match=null,best=1e9;
   pins.forEach(p=>{
@@ -326,7 +342,7 @@ $('submit').onclick=async()=>{
     if(d<=rad&&d<best){best=d;match=p}
   });
   if(match){
-    if((match.voters||[]).includes(phone)){toast('This number already confirmed that spot');return}
+    if((match.voters||[]).includes(phone)){toast(tr('already'));return}
     match.votes=(match.votes||1)+1;
     match.voters=match.voters||[];
     match.voters.push(phone);
@@ -343,7 +359,7 @@ $('submit').onclick=async()=>{
   const target=match||pins[pins.length-1];
   map.setView([target.lat,target.lng],17);
   setTimeout(()=>{if(target._m)target._m.openPopup()},300);
-  toast(match?'Confirm added on the existing pin':'Damage pin dropped here');
+  toast(match?tr('confirmedPin'):tr('dropped'));
 };
 
 let routeLayer=null,destPos=null,suggestTimer=null;
@@ -402,16 +418,17 @@ function showRoute(rt,directBad){
   $('routeClear').hidden=false;
   const mins=Math.max(1,Math.round(rt.min));
   const km=rt.km<10?rt.km.toFixed(1):String(Math.round(rt.km));
-  if(!rt.bad.length && directBad) note.textContent='Rerouted around the bad road. '+km+' km, about '+mins+' min.';
-  else if(rt.bad.length) note.textContent='No clear road around '+rt.bad.length+' damaged spot'+(rt.bad.length>1?'s':'')+'. '+km+' km, about '+mins+' min.';
-  else note.textContent='This road looks clear. '+km+' km, about '+mins+' min.';
+  if(!rt.bad.length && directBad) lastNote=['rerouted',km,mins];
+  else if(rt.bad.length) lastNote=[rt.bad.length>1?'noClearMany':'noClear',rt.bad.length,km,mins];
+  else lastNote=['clearRoad',km,mins];
+  note.textContent=tr.apply(null,lastNote);
 }
 async function planRoute(){
-  if(!myPos){toast('Allow location so the route can start from you');locate(true);return}
-  if(!destPos){toast('Choose a destination');return}
+  if(!myPos){toast(tr('needStart'));locate(true);return}
+  if(!destPos){toast(tr('needDest'));return}
   $('routeGo').disabled=true;
   $('routeNote').hidden=false;
-  $('routeNote').textContent='Checking the roads…';
+  $('routeNote').textContent=tr('checkingRoads');
   try{
     const routes=await osrm([myPos,destPos],true);
     let best=null;
@@ -436,8 +453,8 @@ async function planRoute(){
     }
     showRoute(best,directBad);
   }catch(e){
-    $('routeNote').textContent='Could not build a route. Check the connection and try again.';
-    toast('Routing failed');
+    $('routeNote').textContent=tr('routeFail');
+    toast(tr('routeToast'));
   }
   $('routeGo').disabled=false;
 }
@@ -472,10 +489,10 @@ $('routeForm').onsubmit=async e=>{
   e.preventDefault();
   $('suggest').hidden=true;
   if(!destPos){
-    try{await searchDest($('dest').value)}catch(err){toast('Could not search that place');return}
+    try{await searchDest($('dest').value)}catch(err){toast(tr('searchFail'));return}
     const first=$('suggest').querySelector('.sug');
     if(first){first.click();return}
-    toast('No matching place');
+    toast(tr('noPlace'));
     return;
   }
   planRoute();
@@ -493,7 +510,24 @@ $('routeClear').onclick=()=>{
   $('routeNote').hidden=true;
   $('routeClear').hidden=true;
 };
+
+$('langBtn').onclick=()=>{
+  const menu=$('langMenu');
+  if(!menu.hidden){menu.hidden=true;return}
+  menu.innerHTML='';
+  [['en','English'],['hi','हिन्दी'],['kn','ಕನ್ನಡ'],['mr','मराठी'],['ta','தமிழ்'],['te','తెలుగు']].forEach(([code,name])=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.textContent=name;
+    if(code===lang) b.className='on';
+    b.onclick=()=>{lang=code;localStorage.setItem('roadwatch-lang',code);menu.hidden=true;applyLang()};
+    menu.append(b);
+  });
+  menu.hidden=false;
+};
+document.addEventListener('click',e=>{if(!e.target.closest('#langBtn')&&!e.target.closest('#langMenu')){$('langMenu').hidden=true}});
 load();
+applyLang();
 locate(false);
 </script>
 </body>
