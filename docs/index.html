@@ -30,7 +30,7 @@ main{flex:1;min-height:0;position:relative}
 .item{display:flex;gap:11px;padding:11px 8px;border:0;background:transparent;width:100%;text-align:left;border-bottom:1px solid #eeece5}
 .thumb{width:56px;height:56px;border-radius:8px;object-fit:cover;background:#e9e6df}
 .sev{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;color:#fff}
-.sev-priority{background:var(--red)}.sev-confirmed{background:var(--amber);color:var(--ink)}.sev-reported{background:var(--green)}
+.sev-priority{background:var(--red)}.sev-confirmed{background:var(--amber);color:var(--ink)}.sev-reported{background:var(--green)}.sev-danger{background:#7a1f14}.how{font-size:12.5px;color:#6b6b68;margin:0 0 8px}.sev-pick{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}.sev-pick button{width:auto;margin:0;border:1px solid var(--line);background:#fff;border-radius:20px;padding:8px 12px;font-weight:600}.sev-pick button.on{background:#1c1d1e;color:#fff;border-color:#1c1d1e}
 .votes{font-family:Oswald,sans-serif;font-size:20px;font-weight:700}.item{cursor:pointer}.sev-word,.note-word{cursor:pointer}.note-word{font-size:13px;margin-top:3px;font-weight:600}
 .ui{position:fixed;z-index:1100;pointer-events:none}
 .fabs{right:14px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;align-items:flex-end}
@@ -107,6 +107,13 @@ input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12
 <div class="preview" id="preview" hidden><img id="previewImg" alt=""><button type="button" id="retake">Retake</button></div>
 <div class="loc" id="loc">Finding your location…</div>
 <input id="phone" type="tel" placeholder="Your phone number">
+<p class="how">How bad is the road?</p>
+<div class="sev-pick" id="sevPick">
+  <button type="button" data-sev="minor">Minor</button>
+  <button type="button" data-sev="rough">Rough</button>
+  <button type="button" data-sev="severe">Severe</button>
+  <button type="button" data-sev="dangerous">Dangerous</button>
+</div>
 <input id="note" type="text" placeholder="Short note (optional)" maxlength="140">
 <div class="actions"><button class="btn cancel" id="cancel" type="button">Cancel</button><button class="btn go" id="submit" type="button" disabled>Submit report</button></div>
 </div></div>
@@ -114,10 +121,11 @@ input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
 <script>
 const KEY='roadwatch-live-v2';
-let map,markers,heat,pins=[],me,accCircle,myPos,photo,reportPos,heatOn=true,zooming=false,reportWatch=null;
+let map,markers,heat,pins=[],me,accCircle,myPos,photo,reportPos,heatOn=true,zooming=false,reportWatch=null,reportSev=null;
 const $=id=>document.getElementById(id);
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2600)}
-function sev(v){if(v>=5)return{l:'Priority',c:'#c4432b',k:'sev-priority'};if(v>=2)return{l:'Confirmed',c:'#f2a93b',k:'sev-confirmed'};return{l:'Reported',c:'#4c7a5e',k:'sev-reported'}}
+const WORDS={minor:{l:'Minor',c:'#4c7a5e',k:'sev-reported',r:1},rough:{l:'Rough',c:'#e0a106',k:'sev-confirmed',r:2},severe:{l:'Severe',c:'#c4432b',k:'sev-priority',r:3},dangerous:{l:'Dangerous',c:'#7a1f14',k:'sev-danger',r:4}};
+function sevOf(p){if(p&&WORDS[p.severity])return WORDS[p.severity];const v=(p&&p.votes)||1;if(v>=5)return{l:'Priority',c:'#c4432b',k:'sev-priority',r:3};if(v>=2)return{l:'Confirmed',c:'#f2a93b',k:'sev-confirmed',r:2};return{l:'Reported',c:'#4c7a5e',k:'sev-reported',r:1}}
 function ago(iso){const s=Math.floor((Date.now()-new Date(iso))/1000);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
 function hav(a,b,c,d){const R=6371000,r=x=>x*Math.PI/180,x=r(c-a),y=r(d-b),k=Math.sin(x/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(y/2)**2;return R*2*Math.atan2(Math.sqrt(k),Math.sqrt(1-k))}
 function pinIcon(color){return L.divIcon({className:'pin-wrap',html:'<div class="pin" style="background:'+color+'"></div>',iconSize:[26,26],iconAnchor:[13,24],popupAnchor:[0,-22]})}
@@ -130,7 +138,7 @@ function load(){
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(pins));return}
   catch(e){
-    const lite=pins.map(p=>({id:p.id,lat:p.lat,lng:p.lng,accuracy:p.accuracy,votes:p.votes,note:p.note||'',firstReported:p.firstReported,voters:p.voters||[],photo:''}));
+    const lite=pins.map(p=>({id:p.id,lat:p.lat,lng:p.lng,accuracy:p.accuracy,votes:p.votes,note:p.note||'',severity:p.severity||'',firstReported:p.firstReported,voters:p.voters||[],photo:''}));
     try{localStorage.setItem(KEY,JSON.stringify(lite));toast('Pin saved. Photo was too large to keep on this phone.')}
     catch(e2){toast('Pin is on the map, but this phone is out of storage.')}
   }
@@ -138,18 +146,18 @@ function save(){
 function popupHtml(p,s){
   const img=p.photo?'<img src="'+p.photo+'" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:6px">':'';
   const note=p.note?'<div>'+String(p.note).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>':'';
-  return img+'<div><b>'+p.votes+' '+(p.votes===1?'report':'reports')+'</b> · '+s.l+'</div>'+note+'<div style="color:#6b6b68">'+ago(p.firstReported)+'</div>';
+  return img+'<div><b>'+s.l+'</b> · '+p.votes+' '+(p.votes===1?'report':'reports')+'</div>'+note+'<div style="color:#6b6b68">'+ago(p.firstReported)+'</div>';
 }
 function syncHeat(){
   if(heat){map.removeLayer(heat);heat=null}
   if(!heatOn||zooming||!pins.length||map.getZoom()<12)return;
-  heat=L.heatLayer(pins.map(p=>[p.lat,p.lng,Math.min(p.votes,6)]),{radius:28,blur:22,max:5,minOpacity:.28,gradient:{0:'#4c7a5e',.6:'#f2a93b',1:'#c4432b'}}).addTo(map);
+  heat=L.heatLayer(pins.map(p=>[p.lat,p.lng,sevOf(p).r]),{radius:28,blur:22,max:5,minOpacity:.28,gradient:{0:'#4c7a5e',.6:'#f2a93b',1:'#c4432b'}}).addTo(map);
 }
 function draw(){
   $('count').textContent=pins.length;
   markers.clearLayers();
   pins.forEach(p=>{
-    const s=sev(p.votes||1);
+    const s=sevOf(p);
     L.circle([p.lat,p.lng],{radius:20,color:s.c,weight:2,fillColor:s.c,fillOpacity:.18,pane:'pins'}).addTo(markers);
     const m=L.marker([p.lat,p.lng],{icon:pinIcon(s.c),pane:'pins',zIndexOffset:500+ (p.votes||1)}).addTo(markers);
     m.bindPopup(popupHtml(p,s));
@@ -159,9 +167,9 @@ function draw(){
   const list=$('panelList');
   list.replaceChildren();
   if(!pins.length){list.innerHTML='<div class="empty">No reports on this phone yet. Tap Report damage.</div>';return}
-  const sorted=pins.slice().sort((a,b)=>(b.votes||1)-(a.votes||1));
+  const sorted=pins.slice().sort((a,b)=>((sevOf(b).r*100)+(b.votes||1))-((sevOf(a).r*100)+(a.votes||1)));
   sorted.forEach((p,i)=>{
-    const s=sev(p.votes||1);
+    const s=sevOf(p);
     const btn=document.createElement('button');
     btn.type='button';
     btn.className='item';
@@ -256,7 +264,7 @@ function compress(file){
     r.readAsDataURL(file);
   });
 }
-function ready(){$('submit').disabled=!(photo&&reportPos&&$('phone').value.replace(/\D/g,'').length>=7)}
+function ready(){$('submit').disabled=!(photo&&reportPos&&reportSev&&$('phone').value.replace(/\D/g,'').length>=7)}
 map=L.map('map',{zoomControl:false,attributionControl:true}).setView([20.5937,78.9629],5);
 map.createPane('heat');
 map.getPane('heat').style.zIndex=350;
@@ -277,8 +285,9 @@ $('locateBtn').onclick=()=>locate(true);
 $('heatBtn').onclick=()=>{heatOn=$('heatBtn').classList.toggle('active');$('legend').style.display=heatOn?'block':'none';syncHeat()};
 $('reportBtn').onclick=()=>{
   $('back').classList.add('open');
-  photo=null;reportPos=null;
+  photo=null;reportPos=null;reportSev=null;
   $('preview').hidden=true;$('zone').style.display='block';$('file').value='';
+  $('sevPick').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
   $('loc').textContent='Finding your location…';$('note').value='';ready();
   stopWatch();
   if(!navigator.geolocation){$('loc').textContent='This phone has no location.';return}
@@ -301,6 +310,8 @@ $('file').onchange=async()=>{
   catch(e){$('loc').textContent='Could not update location. Stand outside and retake the photo.';toast('Location did not update')}
 };
 $('phone').oninput=ready;
+$('sevPick').onclick=e=>{const b=e.target.closest('button');if(!b)return;reportSev=b.dataset.sev;$('sevPick').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));ready()};
+
 $('phone').value=localStorage.getItem('roadwatch-phone')||'';
 $('submit').onclick=async()=>{
   if(!photo){toast('Take a photo first');return}
@@ -320,8 +331,9 @@ $('submit').onclick=async()=>{
     match.voters=match.voters||[];
     match.voters.push(phone);
     if(!match.photo)match.photo=photo;
+    if(WORDS[reportSev]&&(!WORDS[match.severity]||WORDS[reportSev].r>WORDS[match.severity].r))match.severity=reportSev;
   }else{
-    pins.push({id:'p_'+Date.now(),lat:reportPos.lat,lng:reportPos.lng,accuracy:reportPos.acc||15,votes:1,photo,note:$('note').value.trim(),firstReported:new Date().toISOString(),voters:[phone]});
+    pins.push({id:'p_'+Date.now(),lat:reportPos.lat,lng:reportPos.lng,accuracy:reportPos.acc||15,votes:1,photo,note:$('note').value.trim(),severity:reportSev,firstReported:new Date().toISOString(),voters:[phone]});
   }
   stopWatch();
   localStorage.setItem('roadwatch-phone',phone);
