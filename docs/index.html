@@ -58,6 +58,16 @@ input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12
 .preview img{width:100%;max-height:200px;object-fit:cover;border-radius:12px}
 .pin-wrap{background:transparent;border:0}
 .pin{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+
+.routebox{position:fixed;z-index:1150;left:70px;right:14px;top:74px}
+.routebox form{display:flex;gap:8px}
+.routebox input{flex:1;width:auto;margin:0;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+#routeGo,#routeClear{border:0;border-radius:10px;background:var(--amber);font-family:Oswald,sans-serif;padding:0 14px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+#routeClear{background:#fff}
+#suggest{background:#fff;border-radius:10px;margin-top:6px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.18);max-height:180px;overflow:auto}
+.sug{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:#fff;padding:10px 12px;font:13px Inter}
+#routeNote{margin-top:6px;background:var(--asphalt);color:var(--paper);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.4}
+.toast{top:auto;bottom:96px}
 </style>
 </head>
 <body>
@@ -77,6 +87,15 @@ input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12
   <button class="fab active" id="heatBtn" type="button" title="Hotspots" aria-label="Hotspots"></button>
   <button class="fab" id="locateBtn" type="button" title="My location" aria-label="My location">⌖</button>
   <button class="report" id="reportBtn" type="button">Report damage</button>
+</div>
+<div class="routebox" id="routeBox">
+  <form id="routeForm">
+    <input id="dest" type="search" placeholder="Where to? Bad roads are avoided" autocomplete="off" enterkeyhint="search">
+    <button id="routeGo" type="submit">Route</button>
+    <button id="routeClear" type="button" hidden>Clear</button>
+  </form>
+  <div id="suggest" hidden></div>
+  <div id="routeNote" hidden></div>
 </div>
 <div class="legend" id="legend"><div>Hotspot density</div><div class="bar"></div></div>
 <div class="toast" id="toast"></div>
@@ -313,6 +332,154 @@ $('submit').onclick=async()=>{
   map.setView([target.lat,target.lng],17);
   setTimeout(()=>{if(target._m)target._m.openPopup()},300);
   toast(match?'Confirm added on the existing pin':'Damage pin dropped here');
+};
+
+let routeLayer=null,destPos=null,suggestTimer=null;
+function segDist(lat,lng,a,b){
+  const mlat=111320, mlng=111320*Math.cos(lat*Math.PI/180);
+  const x=lng*mlng, y=lat*mlat, x1=a[0]*mlng, y1=a[1]*mlat, x2=b[0]*mlng, y2=b[1]*mlat;
+  const dx=x2-x1, dy=y2-y1, l2=dx*dx+dy*dy;
+  let u=l2?((x-x1)*dx+(y-y1)*dy)/l2:0;
+  u=Math.max(0,Math.min(1,u));
+  return Math.hypot(x-(x1+u*dx), y-(y1+u*dy));
+}
+function hitsOn(coords){
+  const bad=[];
+  if(!coords||coords.length<2) return bad;
+  pins.forEach(p=>{
+    let best=1e9;
+    const step=coords.length>2500?2:1;
+    for(let i=step;i<coords.length;i+=step){
+      const d=segDist(p.lat,p.lng,coords[i-step],coords[i]);
+      if(d<best) best=d;
+      if(best<=28) break;
+    }
+    if(best<=28) bad.push(p);
+  });
+  return bad;
+}
+function sidePoints(pin,coords){
+  let bi=1, bd=1e9;
+  for(let i=1;i<coords.length;i++){
+    const d=segDist(pin.lat,pin.lng,coords[i-1],coords[i]);
+    if(d<bd){bd=d;bi=i}
+  }
+  const a=coords[bi-1], b=coords[bi];
+  const dx=b[0]-a[0], dy=b[1]-a[1];
+  const len=Math.hypot(dx,dy)||1e-9;
+  const ux=-dy/len, uy=dx/len;
+  const mlat=90/111320, mlng=90/(111320*Math.cos(pin.lat*Math.PI/180));
+  return [{lat:pin.lat+uy*mlat,lng:pin.lng+ux*mlng},{lat:pin.lat-uy*mlat,lng:pin.lng-ux*mlng}];
+}
+async function osrm(points,alts){
+  const path=points.map(p=>p.lng.toFixed(6)+','+p.lat.toFixed(6)).join(';');
+  const url='https://router.project-osrm.org/route/v1/driving/'+path+'?overview=full&geometries=geojson&alternatives='+(alts?'true':'false');
+  const r=await fetch(url);
+  if(!r.ok) throw new Error('route');
+  const j=await r.json();
+  if(!j.routes||!j.routes.length) throw new Error('noroute');
+  return j.routes.map(rt=>({coords:rt.geometry.coordinates,km:rt.distance/1000,min:rt.duration/60}));
+}
+function showRoute(rt,directBad){
+  if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}
+  const latlngs=rt.coords.map(c=>[c[1],c[0]]);
+  routeLayer=L.polyline(latlngs,{color:rt.bad.length?'#c4432b':'#1d4ed8',weight:6,opacity:.92}).addTo(map);
+  map.fitBounds(routeLayer.getBounds(),{padding:[120,48]});
+  const note=$('routeNote');
+  note.hidden=false;
+  $('routeClear').hidden=false;
+  const mins=Math.max(1,Math.round(rt.min));
+  const km=rt.km<10?rt.km.toFixed(1):String(Math.round(rt.km));
+  if(!rt.bad.length && directBad) note.textContent='Rerouted around the bad road. '+km+' km, about '+mins+' min.';
+  else if(rt.bad.length) note.textContent='No clear road around '+rt.bad.length+' damaged spot'+(rt.bad.length>1?'s':'')+'. '+km+' km, about '+mins+' min.';
+  else note.textContent='This road looks clear. '+km+' km, about '+mins+' min.';
+}
+async function planRoute(){
+  if(!myPos){toast('Allow location so the route can start from you');locate(true);return}
+  if(!destPos){toast('Choose a destination');return}
+  $('routeGo').disabled=true;
+  $('routeNote').hidden=false;
+  $('routeNote').textContent='Checking the roads…';
+  try{
+    const routes=await osrm([myPos,destPos],true);
+    let best=null;
+    routes.forEach(rt=>{
+      const bad=hitsOn(rt.coords);
+      const score=bad.length*100000+rt.min;
+      if(!best||score<best.score) best={...rt,bad,score};
+    });
+    const directBad=best.bad.length;
+    if(directBad){
+      const blockers=best.bad.slice(0,3);
+      for(const pin of blockers){
+        for(const side of sidePoints(pin,best.coords)){
+          try{
+            const via=(await osrm([myPos,side,destPos],false))[0];
+            const bad=hitsOn(via.coords);
+            const score=bad.length*100000+via.min+1;
+            if(score<best.score) best={...via,bad,score};
+          }catch(e){}
+        }
+      }
+    }
+    showRoute(best,directBad);
+  }catch(e){
+    $('routeNote').textContent='Could not build a route. Check the connection and try again.';
+    toast('Routing failed');
+  }
+  $('routeGo').disabled=false;
+}
+async function searchDest(q){
+  const box=$('suggest');
+  if(q.trim().length<2){box.hidden=true;box.innerHTML='';return}
+  const bias=myPos?('&lat='+myPos.lat+'&lon='+myPos.lng):'';
+  const r=await fetch('https://photon.komoot.io/api/?limit=5&q='+encodeURIComponent(q)+bias);
+  const j=await r.json();
+  const feats=j.features||[];
+  if(!feats.length){box.hidden=true;return}
+  box.hidden=false;
+  box.innerHTML='';
+  feats.forEach(f=>{
+    const props=f.properties||{};
+    const label=[props.name,props.street,props.city,props.state,props.country].filter(Boolean);
+    const text=[...new Set(label)].slice(0,3).join(', ')||q;
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='sug';
+    btn.textContent=text;
+    btn.onclick=()=>{
+      destPos={lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0]};
+      $('dest').value=text;
+      box.hidden=true;
+      planRoute();
+    };
+    box.append(btn);
+  });
+}
+$('routeForm').onsubmit=async e=>{
+  e.preventDefault();
+  $('suggest').hidden=true;
+  if(!destPos){
+    try{await searchDest($('dest').value)}catch(err){toast('Could not search that place');return}
+    const first=$('suggest').querySelector('.sug');
+    if(first){first.click();return}
+    toast('No matching place');
+    return;
+  }
+  planRoute();
+};
+$('dest').oninput=()=>{
+  destPos=null;
+  clearTimeout(suggestTimer);
+  suggestTimer=setTimeout(()=>searchDest($('dest').value).catch(()=>{}),280);
+};
+$('routeClear').onclick=()=>{
+  if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}
+  destPos=null;
+  $('dest').value='';
+  $('suggest').hidden=true;
+  $('routeNote').hidden=true;
+  $('routeClear').hidden=true;
 };
 load();
 locate(false);
