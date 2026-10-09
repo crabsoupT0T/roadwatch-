@@ -466,7 +466,7 @@ $('submit').onclick=async()=>{
     if(!match.photo)match.photo=photo;
     if(WORDS[reportSev]&&(!WORDS[match.severity]||WORDS[reportSev].r>WORDS[match.severity].r))match.severity=reportSev;
   }else{
-    pins.push({id:'p_'+Date.now(),lat:reportPos.lat,lng:reportPos.lng,accuracy:reportPos.acc||15,votes:1,photo,note:$('note').value.trim(),severity:reportSev,firstReported:new Date().toISOString(),owner:phone,firstReported:new Date().toISOString(),voters:[phone]});
+    pins.push({id:'p_'+Date.now(),lat:reportPos.lat,lng:reportPos.lng,accuracy:reportPos.acc||15,votes:1,photo,note:$('note').value.trim(),severity:reportSev,owner:phone,firstReported:new Date().toISOString(),voters:[phone]});
   }
   stopWatch();
   localStorage.setItem('roadwatch-phone',phone);
