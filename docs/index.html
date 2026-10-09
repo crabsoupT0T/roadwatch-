@@ -105,13 +105,66 @@ input::placeholder{color:#b3a898}
 #langMenu button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #f3ebdf;background:transparent;padding:12px 14px;font:15px Outfit,sans-serif}
 #langMenu button.on{background:#241f1a;color:#fff8ee}
 @media(max-width:420px){.legend{display:none}.report{padding:15px 16px}}
+
+html[data-theme="dark"]{color-scheme:dark}
+html[data-theme="dark"] body{background:#100e0c;color:#f6efe4}
+html[data-theme="dark"]{--ink:#f6efe4;--paper:#16130f;--card:#1e1a16;--soft:#b7aa9a;--line:#3a332b;--shadow:0 16px 40px rgba(0,0,0,.45)}
+html[data-theme="dark"] header>div:first-child,
+html[data-theme="dark"] .list-toggle,
+html[data-theme="dark"] .routebox form,
+html[data-theme="dark"] #suggest,
+html[data-theme="dark"] .legend,
+html[data-theme="dark"] .fab,
+html[data-theme="dark"] .zbtn,
+html[data-theme="dark"] #langMenu,
+html[data-theme="dark"] .item,
+html[data-theme="dark"] .zone,
+html[data-theme="dark"] input,
+html[data-theme="dark"] .loc,
+html[data-theme="dark"] .leaflet-popup-content-wrapper{background:#1e1a16;color:#f6efe4;border-color:#3a332b}
+html[data-theme="dark"] #panel,
+html[data-theme="dark"] .modal{background:#16130f;color:#f6efe4}
+html[data-theme="dark"] #panelClose,
+html[data-theme="dark"] .cancel,
+html[data-theme="dark"] #retake,
+html[data-theme="dark"] #routeClear,
+html[data-theme="dark"] .sev-pick button{background:#2a241e;color:#f6efe4;border-color:#3a332b}
+html[data-theme="dark"] .sev-pick button.on{background:#f0b429;color:#24190c;border-color:#f0b429}
+html[data-theme="dark"] .sug{background:#1e1a16;color:#f6efe4;border-bottom-color:#3a332b}
+html[data-theme="dark"] #langMenu button{color:#f6efe4;border-bottom-color:#3a332b}
+html[data-theme="dark"] #langMenu button.on{background:#f0b429;color:#24190c}
+html[data-theme="dark"] .tag,
+html[data-theme="dark"] .panel-head p,
+html[data-theme="dark"] .how,
+html[data-theme="dark"] .note-word,
+html[data-theme="dark"] .loc,
+html[data-theme="dark"] .modal p,
+html[data-theme="dark"] .legend{color:#cbbfae}
+html[data-theme="dark"] h1,
+html[data-theme="dark"] .panel-head h2,
+html[data-theme="dark"] .modal h2,
+html[data-theme="dark"] .rank,
+html[data-theme="dark"] .votes,
+html[data-theme="dark"] .zbtn{color:#f6efe4}
+html[data-theme="dark"] #count{background:#f0b429;color:#24190c}
+html[data-theme="dark"] #map,
+html[data-theme="dark"] .leaflet-container{background:#12100e}
+html[data-theme="dark"] .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.65)}
+html[data-theme="dark"] .leaflet-control-attribution{background:rgba(22,19,15,.9)!important;color:#b7aa9a}
+html[data-theme="dark"] input::placeholder{color:#8d8172}
+html[data-theme="dark"] .empty{color:#b7aa9a}
+html[data-theme="dark"] .thumb{background:#2a241e}
 </style>
+<script>
+(function(){try{var s=localStorage.getItem('roadwatch-theme');if(!s)s=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=s;}catch(e){}})();
+</script>
 </head>
 <body>
 <div id="app">
 <header>
   <div><h1>RoadWatch</h1><div class="tag" data-i18n="tag">Live community map</div></div>
   <div class="head-actions">
+    <button class="list-toggle" id="themeBtn" type="button" aria-label="Dark mode">☾</button>
     <button class="list-toggle" id="langBtn" type="button" aria-label="Language">EN</button>
     <button class="list-toggle" id="panelToggle" type="button"><span data-i18n="priList">Priority list</span> <span id="count">0</span></button>
   </div>
@@ -563,6 +616,21 @@ $('langBtn').onclick=()=>{
   menu.hidden=false;
 };
 document.addEventListener('click',e=>{if(!e.target.closest('#langBtn')&&!e.target.closest('#langMenu')){$('langMenu').hidden=true}});
+
+function paintTheme(){
+  const dark=document.documentElement.dataset.theme==='dark';
+  $('themeBtn').textContent=dark?'☀':'☾';
+  $('themeBtn').setAttribute('aria-label', dark?'Light mode':'Dark mode');
+  const m=document.querySelector('meta[name="theme-color"]');
+  if(m) m.setAttribute('content', dark?'#16130f':'#fbf7f1');
+}
+$('themeBtn').onclick=()=>{
+  const next=document.documentElement.dataset.theme==='dark'?'light':'dark';
+  document.documentElement.dataset.theme=next;
+  localStorage.setItem('roadwatch-theme', next);
+  paintTheme();
+};
+paintTheme();
 load();
 applyLang();
 locate(false);
