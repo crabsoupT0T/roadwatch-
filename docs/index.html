@@ -385,7 +385,7 @@ map.createPane('me');
 map.getPane('me').style.zIndex=420;
 map.createPane('pins');
 map.getPane('pins').style.zIndex=650;
-L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',{maxZoom:19,maxNativeZoom:18,subdomains:'abc',attribution:'© OpenStreetMap France'}).addTo(map);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,maxNativeZoom:18,attribution:'© OpenStreetMap'}).addTo(map);
 markers=L.layerGroup().addTo(map);
 map.on('zoomstart',()=>{zooming=true;if(heat){map.removeLayer(heat);heat=null}});
 map.on('zoomend',()=>{zooming=false;syncHeat()});
