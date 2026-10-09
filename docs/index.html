@@ -154,6 +154,9 @@ html[data-theme="dark"] .leaflet-control-attribution{background:rgba(22,19,15,.9
 html[data-theme="dark"] input::placeholder{color:#8d8172}
 html[data-theme="dark"] .empty{color:#b7aa9a}
 html[data-theme="dark"] .thumb{background:#2a241e}
+
+.zoombar .zbtn:nth-child(2){border-radius:0}
+#mapTheme{margin-top:10px;border-radius:18px;border-top:0;font-size:18px}
 </style>
 <script>
 (function(){try{var s=localStorage.getItem('roadwatch-theme');if(!s)s=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=s;}catch(e){}})();
@@ -175,6 +178,7 @@ html[data-theme="dark"] .thumb{background:#2a241e}
 <div class="ui zoombar">
   <button class="zbtn" id="zoomIn" type="button" aria-label="Zoom in">+</button>
   <button class="zbtn" id="zoomOut" type="button" aria-label="Zoom out">−</button>
+  <button class="zbtn" id="mapTheme" type="button" aria-label="Dark mode">☾</button>
 </div>
 <div class="ui fabs">
   <button class="fab active" id="heatBtn" type="button" title="Hotspots" aria-label="Hotspots"></button>
@@ -619,17 +623,22 @@ document.addEventListener('click',e=>{if(!e.target.closest('#langBtn')&&!e.targe
 
 function paintTheme(){
   const dark=document.documentElement.dataset.theme==='dark';
-  $('themeBtn').textContent=dark?'☀':'☾';
-  $('themeBtn').setAttribute('aria-label', dark?'Light mode':'Dark mode');
+  ['themeBtn','mapTheme'].forEach(id=>{
+    const el=$(id); if(!el) return;
+    el.textContent=dark?'☀':'☾';
+    el.setAttribute('aria-label', dark?'Light mode':'Dark mode');
+  });
   const m=document.querySelector('meta[name="theme-color"]');
   if(m) m.setAttribute('content', dark?'#16130f':'#fbf7f1');
 }
-$('themeBtn').onclick=()=>{
+function toggleTheme(){
   const next=document.documentElement.dataset.theme==='dark'?'light':'dark';
   document.documentElement.dataset.theme=next;
   localStorage.setItem('roadwatch-theme', next);
   paintTheme();
-};
+}
+$('themeBtn').onclick=toggleTheme;
+$('mapTheme').onclick=toggleTheme;
 paintTheme();
 load();
 applyLang();
